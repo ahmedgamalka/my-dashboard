@@ -211,6 +211,7 @@ def main():
             display: block;
             margin-left: auto;
             margin-right: auto;
+            align:center;
             animation: fadeIn 1.2s ease-in-out;
         }
         @keyframes fadeIn {
@@ -234,10 +235,8 @@ def main():
     st.sidebar.title("Trading Risk Management & Journaling")
     page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
-    st.sidebar.markdown(
-        '<div class="sidebar-footer">Designed & Developed by <strong>Ahmed Gamal</strong></div>',
-        unsafe_allow_html=True
-    )
+    st.sidebar.markdown("---")
+    st.sidebar.markdown('<p style="text-align:left;">Designed & Developed by <strong>Ahmed Gamal</strong></p>', unsafe_allow_html=True)
 
     if page == "Risk Management":
         risk_management_page()
