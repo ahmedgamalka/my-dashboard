@@ -4,13 +4,13 @@ import plotly.express as px
 import os
 from datetime import datetime
 
-# ✅ أول شيء: Page Config
+# ✅ إعداد الصفحة و favicon
 st.set_page_config(
     page_title="Trading Journal",
     page_icon="favicon.ico"
 )
 
-# ----------------- Dark Theme Only -----------------
+# ✅ Theme
 def set_dark_theme():
     st.markdown(
         """
@@ -22,7 +22,6 @@ def set_dark_theme():
         unsafe_allow_html=True,
     )
 
-# ----------------- Create Journal CSV if not exists -----------------
 journal_file = "trades_journal.csv"
 if not os.path.exists(journal_file):
     df_empty = pd.DataFrame(columns=[
@@ -32,7 +31,15 @@ if not os.path.exists(journal_file):
     ])
     df_empty.to_csv(journal_file, index=False)
 
-# ----------------- Risk Management Page -----------------
+# ✅ Highlight function
+def highlight_special_rows(row):
+    highlight_style = "background-color: #FFF200; color: black"
+    if row["Metric"] in ["Position Size (shares)", "Calculated Take Profit Price ($)"]:
+        return [highlight_style, highlight_style]
+    else:
+        return ["", ""]
+
+# ✅ Risk Management Page
 def risk_management_page():
     st.header("📊 Risk Management")
 
@@ -91,10 +98,10 @@ def risk_management_page():
 
             df = pd.DataFrame(result_data)
             st.subheader("📊 Results:")
-            st.dataframe(df)
+            st.dataframe(df.style.apply(highlight_special_rows, axis=1))
 
             ticker_symbol = st.text_input("Ticker Symbol for this trade")
-            if ticker_symbol and st.button("Send Trade to Journal"):
+            if ticker_symbol and st.button("Add Trade to Journal"):
                 trade_data = {
                     "Ticker Symbol": ticker_symbol,
                     "Trade Direction": "Long",
@@ -115,7 +122,7 @@ def risk_management_page():
                 df_old = pd.read_csv(journal_file)
                 df_new = pd.concat([df_old, pd.DataFrame([trade_data])], ignore_index=True)
                 df_new.to_csv(journal_file, index=False)
-                st.success("✅ Trade added to journal!")
+                st.success("✅ Trade successfully added to journal!")
 
 # ----------------- Add Trade Page -----------------
 def add_trade_page():
