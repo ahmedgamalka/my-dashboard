@@ -183,21 +183,60 @@ def trade_journal_page():
             st.success("✅ Trade deleted.")
             st.experimental_rerun()
 
-# ----------------- Dashboard Page -----------------
+# ------------------ Dashboard Page ------------------
 def dashboard_page():
     st.header("📈 Trading Performance Dashboard")
+
     df = pd.read_csv(journal_file)
     if df.empty:
         st.warning("No trades recorded yet.")
         return
 
-    total_pnl = df["Net P&L"].sum()
-    st.metric("Total Net P&L", f"${total_pnl:.2f}")
+    st.subheader("📅 Filter by Date Range:")
+    date_filter_start = st.date_input("From Date", value=datetime(2023, 1, 1), key="dash_start")
+    date_filter_end = st.date_input("To Date", value=datetime.now(), key="dash_end")
 
     df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
-    df['Cumulative PnL'] = df["Net P&L"].cumsum()
-    fig = px.line(df, y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    filtered_df = df[
+        (df["Entry Time"] >= pd.to_datetime(date_filter_start)) &
+        (df["Entry Time"] <= pd.to_datetime(date_filter_end))
+    ]
+
+    if filtered_df.empty:
+        st.warning("⚠️ No trades found for the selected period.")
+        return
+
+    filtered_df["Net P&L"] = pd.to_numeric(filtered_df["Net P&L"], errors="coerce")
+    filtered_df["R Multiple"] = pd.to_numeric(filtered_df["R Multiple"], errors="coerce")
+
+    total_trades = len(filtered_df)
+    winning_trades = filtered_df[filtered_df["Net P&L"] > 0]
+    losing_trades = filtered_df[filtered_df["Net P&L"] <= 0]
+    win_rate = (len(winning_trades) / total_trades) * 100 if total_trades > 0 else 0
+    avg_win = winning_trades["Net P&L"].mean() if not winning_trades.empty else 0
+    avg_loss = losing_trades["Net P&L"].mean() if not losing_trades.empty else 0
+    total_pnl = filtered_df["Net P&L"].sum()
+    avg_r = filtered_df["R Multiple"].mean()
+    max_gain = filtered_df["Net P&L"].max()
+    max_loss = filtered_df["Net P&L"].min()
+
+    st.metric("Total Trades", total_trades)
+    st.metric("Win Rate %", f"{win_rate:.2f}%")
+    st.metric("Total Net P&L", f"${total_pnl:.2f}")
+    st.metric("Average R Multiple", f"{avg_r:.2f}")
+    st.metric("Max Gain", f"${max_gain:.2f}")
+    st.metric("Max Loss", f"${max_loss:.2f}")
+
+    st.subheader("📈 Equity Curve")
+    filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
+    fig = px.line(filtered_df, y="Cumulative PnL", title="Cumulative Net P&L Over Time")
     st.plotly_chart(fig)
+
+    st.subheader("🏷️ Performance by Ticker Symbol")
+    ticker_perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
+    fig_bar = px.bar(ticker_perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
+    st.plotly_chart(fig_bar)
+
 
 # ----------------- Main & Sidebar -----------------
 def main():
@@ -236,24 +275,25 @@ def main():
     st.sidebar.title("Trading Risk Management & Journaling")
     page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
+    # الملكية مثبتة في أسفل الـ sidebar
     st.sidebar.markdown(
-    """
-    <style>
-    .sidebar-footer {
-        position: fixed;
-        bottom: 20px;
-        width: 100%;
-        text-align: center;
-        font-size: 15px;
-        color: white;
-    }
-    </style>
-    <div class="sidebar-footer">
-        Designed & Developed by <strong>Ahmed Gamal</strong>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        """
+        <style>
+        .sidebar-footer {
+            position: fixed;
+            bottom: 20px;
+            text-align: left;
+            width: 100%;
+            font-size: 15px;
+        }
+        </style>
+        <div class="sidebar-footer">
+            Designed & Developed by <strong>Ahmed Gamal</strong>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
 
     if page == "Risk Management":
         risk_management_page()
