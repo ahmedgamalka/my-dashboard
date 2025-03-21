@@ -242,7 +242,7 @@ def dashboard_page():
 def main():
     set_dark_theme()
 
-    st.sidebar.image("logo.png", width=180)
+    st.sidebar.image("logo.png", width=140)
     st.sidebar.markdown(
         """
         <style>
@@ -252,7 +252,7 @@ def main():
             margin-left: auto;
             margin-right: auto;
             align: center;
-            animation: fadeIn 1.2s ease-in-out;
+            animation: fadeIn 1.5s ease-in-out;
         }
         @keyframes fadeIn {
             0% { opacity: 0; transform: scale(0.9); }
@@ -262,7 +262,6 @@ def main():
             position: fixed;
             bottom: 20px;
             left: 50%;
-            transform: translateX(-50%);
             text-align: center;
             font-size: 14px;
             color: white;
