@@ -7,6 +7,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Trading Journal", page_icon="📈")
 
+# تفعيل الوضع الداكن
 def set_dark_theme():
     st.markdown("""
         <style>
@@ -15,12 +16,14 @@ def set_dark_theme():
         </style>
     """, unsafe_allow_html=True)
 
+# تشفير كلمة السر
 def hash_password(password):
     return sha256(password.encode()).hexdigest()
 
 def verify_password(password, hashed):
     return hash_password(password) == hashed
 
+# شاشة تسجيل الدخول وإنشاء حساب
 def login_signup():
     st.title("🔐 Login or Sign Up")
     menu = st.radio("Select:", ["Login", "Sign Up"])
@@ -55,12 +58,14 @@ def login_signup():
             else:
                 st.warning("No users found. Please sign up first.")
 
+# تمييز صفوف معينة في الجداول
 def highlight_rows(row):
     highlight = "background-color: yellow; color: black"
     if row["Metric"] in ["Position Size (shares)", "Calculated Take Profit Price ($)"]:
         return [highlight, highlight]
     return ["", ""]
 
+# صفحة إدارة المخاطر
 def risk_management_page(journal_file):
     st.header("📊 Risk Management")
     acc_bal = st.number_input("Account Balance ($)", min_value=0.0, value=1000.0, step=100.0)
@@ -93,8 +98,9 @@ def risk_management_page(journal_file):
             ]
         })
 
-        st.dataframe(df.style.apply(highlight_rows, axis=1))
+        st.dataframe(df.style.apply(highlight_rows, axis=1), use_container_width=True)
 
+# إضافة صفقة جديدة
 def add_trade_page(journal_file):
     st.header("➕ Add Trade")
     ticker = st.text_input("Ticker Symbol")
@@ -127,9 +133,12 @@ def add_trade_page(journal_file):
         df.to_csv(journal_file, index=False)
         st.success("✅ Trade successfully added to journal!")
 
+# عرض وتصفية وحذف الصفقات
 def trade_journal_page(journal_file):
     st.header("📁 Trade Journal")
     df = pd.read_csv(journal_file)
+    df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
+    df = df.dropna(subset=["Entry Time"])
     st.write(f"Total Trades Recorded: {len(df)}")
 
     ticker_filter = st.text_input("Filter by Ticker Symbol (optional)")
@@ -140,7 +149,6 @@ def trade_journal_page(journal_file):
     if ticker_filter:
         filtered_df = filtered_df[filtered_df["Ticker Symbol"].str.contains(ticker_filter, case=False)]
 
-    filtered_df["Entry Time"] = pd.to_datetime(filtered_df["Entry Time"], errors="coerce")
     filtered_df = filtered_df[
         (filtered_df["Entry Time"] >= pd.to_datetime(date_filter_start)) &
         (filtered_df["Entry Time"] <= pd.to_datetime(date_filter_end))
@@ -161,60 +169,41 @@ def trade_journal_page(journal_file):
             st.success(f"✅ Deleted trade: {summary}")
             st.rerun()
 
+# داشبورد التحليل
 def dashboard_page(journal_file):
     st.header("📈 Trading Performance Dashboard")
-
     df = pd.read_csv(journal_file)
-    if df.empty:
-        st.warning("No trades recorded yet.")
-        return
-
-    st.subheader("📅 Filter by Date Range:")
-    date_filter_start = st.date_input("From Date", value=datetime(2023, 1, 1), key="dash_start")
-    date_filter_end = st.date_input("To Date", value=datetime.now(), key="dash_end")
-
     df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
-    filtered_df = df[
-        (df["Entry Time"] >= pd.to_datetime(date_filter_start)) &
-        (df["Entry Time"] <= pd.to_datetime(date_filter_end))
+    df = df.dropna(subset=["Entry Time"])
+
+    st.subheader("📅 Filter by Date Range")
+    start_date = st.date_input("Start Date", value=datetime(2023, 1, 1))
+    end_date = st.date_input("End Date", value=datetime.now())
+
+    filtered = df[
+        (df["Entry Time"] >= pd.to_datetime(start_date)) &
+        (df["Entry Time"] <= pd.to_datetime(end_date))
     ]
 
-    if filtered_df.empty:
+    if filtered.empty:
         st.warning("⚠️ No trades found for the selected period.")
         return
 
-    filtered_df["Net P&L"] = pd.to_numeric(filtered_df["Net P&L"], errors="coerce")
-    filtered_df["R Multiple"] = pd.to_numeric(filtered_df["R Multiple"], errors="coerce")
-
-    total_trades = len(filtered_df)
-    winning_trades = filtered_df[filtered_df["Net P&L"] > 0]
-    losing_trades = filtered_df[filtered_df["Net P&L"] <= 0]
-    win_rate = (len(winning_trades) / total_trades) * 100 if total_trades > 0 else 0
-    avg_win = winning_trades["Net P&L"].mean() if not winning_trades.empty else 0
-    avg_loss = losing_trades["Net P&L"].mean() if not losing_trades.empty else 0
-    total_pnl = filtered_df["Net P&L"].sum()
-    avg_r = filtered_df["R Multiple"].mean()
-    max_gain = filtered_df["Net P&L"].max()
-    max_loss = filtered_df["Net P&L"].min()
-
-    st.metric("Total Trades", total_trades)
-    st.metric("Win Rate %", f"{win_rate:.2f}%")
-    st.metric("Total Net P&L", f"${total_pnl:.2f}")
-    st.metric("Average R Multiple", f"{avg_r:.2f}")
-    st.metric("Max Gain", f"${max_gain:.2f}")
-    st.metric("Max Loss", f"${max_loss:.2f}")
+    st.metric("Total Trades", len(filtered))
+    st.metric("Total Net P&L", f"${filtered['Net P&L'].sum():.2f}")
+    st.metric("Win Rate %", f"{(filtered['Net P&L'] > 0).mean() * 100:.2f}%")
 
     st.subheader("📈 Equity Curve")
-    filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
-    fig = px.line(filtered_df, y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
+    fig = px.line(filtered, y="Cumulative PnL", title="Cumulative Net P&L Over Time")
     st.plotly_chart(fig)
 
     st.subheader("🏷️ Performance by Ticker Symbol")
-    ticker_perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
-    fig_bar = px.bar(ticker_perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
+    perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
+    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
     st.plotly_chart(fig_bar)
 
-
+# التطبيق الأساسي
 def main():
     set_dark_theme()
     if "username" not in st.session_state:
@@ -230,7 +219,6 @@ def main():
             ]).to_csv(journal_file, index=False)
 
         st.sidebar.image("logo.png", width=150)
-        st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
         page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
@@ -242,8 +230,7 @@ def main():
                 bottom: 20px;
                 left: 50%;
                 transform: translateX(-50%);
-                margin-left: 20px;
-                text-align: left;
+                text-align: center;
                 font-size: 14px;
                 color: white;
             }
