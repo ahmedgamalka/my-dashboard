@@ -193,7 +193,7 @@ def dashboard_page():
 # ----------------- Main & Sidebar -----------------
 def main():
     set_dark_theme()
-    st.sidebar.image("logo.png", use_container_width=True)
+    st.sidebar.image("logo.png", width=180)
     st.sidebar.title("📈 Trading Risk Management & Journaling")
     page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
