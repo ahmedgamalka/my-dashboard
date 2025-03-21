@@ -261,7 +261,6 @@ def main():
         .sidebar-footer {
             position: fixed;
             bottom: 20px;
-            left: 50%;
             transform: translateX(-50%);
             text-align: center;
             font-size: 15px;
@@ -282,7 +281,7 @@ def main():
         .sidebar-footer {
             position: fixed;
             bottom: 20px;
-            text-align: left;
+            text-align: center;
             width: 100%;
             font-size: 15px;
         }
