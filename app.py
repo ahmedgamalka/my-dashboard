@@ -244,7 +244,7 @@ def main():
                 left: 50%;
                 transform: translateX(-50%);
                 margin-left: 20px;
-                text-align: center;
+                text-align: left;
                 font-size: 14px;
                 color: white;
             }
