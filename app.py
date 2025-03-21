@@ -193,6 +193,7 @@ def dashboard_page():
 # ----------------- Main & Sidebar -----------------
 def main():
     set_dark_theme()
+    
     st.sidebar.markdown(
     f"""
     <div style="display: flex; justify-content: center; align-items: center; animation: fadeIn 1.2s;">
@@ -207,7 +208,7 @@ def main():
     """,
     unsafe_allow_html=True
 )
-    st.sidebar.title("📈 Trading Risk Management & Journaling")
+    st.sidebar.title("Trading Risk Management & Journaling")
     page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
     st.sidebar.markdown(
