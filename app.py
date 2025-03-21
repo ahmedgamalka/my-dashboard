@@ -237,23 +237,23 @@ def main():
     page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
     st.sidebar.markdown(
-        """
-        <style>
-        .sidebar-footer {
-            position: fixed;
-            bottom: 20px;
-            text-align: left;
-            left: 25%;
-            width: 100%;
-            font-size: 16px;
-        }
-        </style>
-        <div class="sidebar-footer">
-            Designed & Developed by <strong>Ahmed Gamal</strong>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
+    """
+    <style>
+    .sidebar-footer {
+        position: fixed;
+        bottom: 20px;
+        width: 100%;
+        text-align: center;
+        font-size: 15px;
+        color: white;
+    }
+    </style>
+    <div class="sidebar-footer">
+        Designed & Developed by <strong>Ahmed Gamal</strong>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
     if page == "Risk Management":
         risk_management_page()
