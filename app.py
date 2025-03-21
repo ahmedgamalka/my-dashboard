@@ -212,7 +212,7 @@ def main():
             width: 100%;
             margin-left: auto;
             margin-right: auto;
-            align:center;
+            align: center;
             animation: fadeIn 1.2s ease-in-out;
         }
         @keyframes fadeIn {
@@ -242,6 +242,8 @@ def main():
         .sidebar-footer {
             position: fixed;
             bottom: 20px;
+            margin-left: auto;
+            margin-right: auto;
             text-align: left;
             width: 100%;
             font-size: 16px;
