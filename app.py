@@ -196,7 +196,7 @@ def main():
     
     st.sidebar.image("logo.png", width=180)
 
-st.sidebar.markdown(
+    st.sidebar.markdown(
     """
     <style>
     [data-testid="stSidebar"] img {
