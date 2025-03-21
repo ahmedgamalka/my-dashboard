@@ -4,6 +4,11 @@ import plotly.express as px
 import os
 from datetime import datetime
 
+st.set_page_config(
+    page_title="Trading Journal",
+    page_icon="favicon.ico"
+)
+
 # ----------------- Dark Theme Only -----------------
 def set_dark_theme():
     st.markdown(
@@ -268,11 +273,6 @@ def dashboard_page():
 def main():
     set_dark_theme()
     
-    # ✅ ضبط الـ Favicon والـ Title في المتصفح
-
-    st.set_page_config(
-    page_title="Trading Risk Management",
-    page_icon="favicon.ico"
 )
     st.sidebar.image("logo.png", use_column_width=True)
     st.sidebar.title("📈 Trading Risk Management & Journaling")
