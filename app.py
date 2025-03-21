@@ -150,14 +150,13 @@ def trade_journal_page(journal_file):
         st.warning("⚠️ No trades found for the selected period.")
         return
 
-    st.dataframe(filtered_df.reset_index(drop=True))
+    st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
 
     st.subheader("🗑️ Delete Trades:")
     for idx, row in filtered_df.iterrows():
         summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']}"
         if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
-            df.drop(index=idx, inplace=True)
-            df.reset_index(drop=True, inplace=True)
+            df = df.drop(row.name).reset_index(drop=True)
             df.to_csv(journal_file, index=False)
             st.success(f"✅ Deleted trade: {summary}")
             st.rerun()
