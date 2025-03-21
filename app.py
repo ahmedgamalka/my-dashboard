@@ -194,16 +194,16 @@ def dashboard_page():
 def main():
     set_dark_theme()
     
-    st.sidebar.markdown(
-    f"""
-    <div style="display: flex; justify-content: center; align-items: center; animation: fadeIn 1.2s;">
-        <img src="logo.png" width="180">
-    </div>
+    st.sidebar.image("logo.png", width=180)
+
+st.sidebar.markdown(
+    """
     <style>
-    @keyframes fadeIn {{
-        0% {{ opacity: 0; transform: scale(0.8); }}
-        100% {{ opacity: 1; transform: scale(1); }}
-    }}
+    [data-testid="stSidebar"] img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
     </style>
     """,
     unsafe_allow_html=True
