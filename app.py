@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -128,11 +127,9 @@ def add_trade_page(journal_file):
         df.to_csv(journal_file, index=False)
         st.success("✅ Trade successfully added to journal!")
 
-def trade_journal_page():
+def trade_journal_page(journal_file):
     st.header("📁 Trade Journal")
-
     df = pd.read_csv(journal_file)
-
     st.write(f"Total Trades Recorded: {len(df)}")
 
     ticker_filter = st.text_input("Filter by Ticker Symbol (optional)")
@@ -140,7 +137,6 @@ def trade_journal_page():
     date_filter_end = st.date_input("To Date", value=datetime.now())
 
     filtered_df = df.copy()
-
     if ticker_filter:
         filtered_df = filtered_df[filtered_df["Ticker Symbol"].str.contains(ticker_filter, case=False)]
 
@@ -154,22 +150,20 @@ def trade_journal_page():
         st.warning("⚠️ No trades found for the selected period.")
         return
 
-    # عرض الجدول
     st.dataframe(filtered_df.reset_index(drop=True))
 
-    # زر حذف لكل صفقة
     st.subheader("🗑️ Delete Trades:")
     for idx, row in filtered_df.iterrows():
-        trade_summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-        if st.button(f"❌ Delete: {trade_summary}", key=f"del_{idx}"):
+        summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']}"
+        if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
             df.drop(index=idx, inplace=True)
             df.reset_index(drop=True, inplace=True)
             df.to_csv(journal_file, index=False)
-            st.success(f"✅ Deleted trade: {trade_summary}")
-            st.experimental_rerun()
+            st.success(f"✅ Deleted trade: {summary}")
+            st.rerun()
 
-def dashboard_page(journal_file):
-     st.header("📈 Trading Performance Dashboard")
+def dashboard_page():
+    st.header("📈 Trading Performance Dashboard")
 
     df = pd.read_csv(journal_file)
     if df.empty:
@@ -237,19 +231,19 @@ def main():
 
         st.sidebar.image("logo.png", width=150)
         st.sidebar.title(f"Welcome, {user}")
-        st.sidebar.title("Trading Risk Management & Journaling")
         page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
         st.sidebar.markdown(
             '''
             <style>
             .sidebar-footer {
-                 position: fixed;
-            bottom: 20px;
-            text-align: left;
-            width: 100%;
-            font-size: 15px;
-
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                text-align: center;
+                font-size: 14px;
+                color: white;
             }
             </style>
             <div class="sidebar-footer">
