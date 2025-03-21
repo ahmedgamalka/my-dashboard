@@ -209,6 +209,8 @@ def main():
         <style>
         [data-testid="stSidebar"] img {
             display: block;
+            position: fixed;
+            width: 100%;
             margin-left: auto;
             margin-right: auto;
             align:center;
@@ -235,8 +237,23 @@ def main():
     st.sidebar.title("Trading Risk Management & Journaling")
     page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
-    st.sidebar.markdown("---")
-    st.sidebar.markdown('<p style="text-align:left;">Designed & Developed by <strong>Ahmed Gamal</strong></p>', unsafe_allow_html=True)
+    st.sidebar.markdown(
+        """
+        <style>
+        .sidebar-footer {
+            position: fixed;
+            bottom: 20px;
+            text-align: left;
+            width: 100%;
+            font-size: 14px;
+        }
+        </style>
+        <div class="sidebar-footer">
+            Designed & Developed by <strong>Ahmed Gamal</strong>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
     if page == "Risk Management":
         risk_management_page()
