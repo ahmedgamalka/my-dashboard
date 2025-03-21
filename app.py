@@ -4,13 +4,13 @@ import plotly.express as px
 import os
 from datetime import datetime
 
-# ✅ إعداد الصفحة و favicon
+# ✅ Page config
 st.set_page_config(
     page_title="Trading Journal",
     page_icon="favicon.ico"
 )
 
-# ✅ Theme
+# ✅ Dark Theme
 def set_dark_theme():
     st.markdown(
         """
@@ -22,6 +22,7 @@ def set_dark_theme():
         unsafe_allow_html=True,
     )
 
+# ✅ Create CSV if not exists
 journal_file = "trades_journal.csv"
 if not os.path.exists(journal_file):
     df_empty = pd.DataFrame(columns=[
@@ -31,7 +32,7 @@ if not os.path.exists(journal_file):
     ])
     df_empty.to_csv(journal_file, index=False)
 
-# ✅ Highlight function
+# ✅ Highlight rows function
 def highlight_special_rows(row):
     highlight_style = "background-color: #FFF200; color: black"
     if row["Metric"] in ["Position Size (shares)", "Calculated Take Profit Price ($)"]:
@@ -101,28 +102,29 @@ def risk_management_page():
             st.dataframe(df.style.apply(highlight_special_rows, axis=1))
 
             ticker_symbol = st.text_input("Ticker Symbol for this trade")
-            if ticker_symbol and st.button("Add Trade to Journal"):
-                trade_data = {
-                    "Ticker Symbol": ticker_symbol,
-                    "Trade Direction": "Long",
-                    "Entry Price": entry_price,
-                    "Entry Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "Exit Price": "",
-                    "Exit Time": "",
-                    "Position Size": position_size,
-                    "Risk": actual_risk_dollar,
-                    "Risk Percentage": risk_percentage * 100,
-                    "Trade SL": stop_loss_price,
-                    "Target": take_profit_price,
-                    "R Multiple": actual_rr_ratio,
-                    "Commission": total_commission,
-                    "Net P&L": "",
-                    "Custom Close": ""
-                }
-                df_old = pd.read_csv(journal_file)
-                df_new = pd.concat([df_old, pd.DataFrame([trade_data])], ignore_index=True)
-                df_new.to_csv(journal_file, index=False)
-                st.success("✅ Trade successfully added to journal!")
+            if ticker_symbol:
+                if st.button("Add Trade to Journal"):
+                    trade_data = {
+                        "Ticker Symbol": ticker_symbol,
+                        "Trade Direction": "Long",
+                        "Entry Price": entry_price,
+                        "Entry Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Exit Price": "",
+                        "Exit Time": "",
+                        "Position Size": position_size,
+                        "Risk": actual_risk_dollar,
+                        "Risk Percentage": risk_percentage * 100,
+                        "Trade SL": stop_loss_price,
+                        "Target": take_profit_price,
+                        "R Multiple": actual_rr_ratio,
+                        "Commission": total_commission,
+                        "Net P&L": "",
+                        "Custom Close": ""
+                    }
+                    df_old = pd.read_csv(journal_file)
+                    df_new = pd.concat([df_old, pd.DataFrame([trade_data])], ignore_index=True)
+                    df_new.to_csv(journal_file, index=False)
+                    st.success("✅ Trade successfully added to journal!")
 
 # ----------------- Add Trade Page -----------------
 def add_trade_page():
@@ -200,57 +202,51 @@ def dashboard_page():
 # ----------------- Main & Sidebar -----------------
 def main():
     set_dark_theme()
-    
+
     st.sidebar.image("logo.png", width=180)
-
     st.sidebar.markdown(
-    """
-    <style>
-    [data-testid="stSidebar"] img {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        animation: fadeIn 1.5s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-        0% { opacity: 0; transform: scale(0.85); }
-        100% { opacity: 1; transform: scale(1); }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+        """
+        <style>
+        [data-testid="stSidebar"] img {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeIn 1.2s ease-in-out;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .sidebar-footer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 14px;
+            color: white;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.sidebar.title("Trading Risk Management & Journaling")
     page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
     st.sidebar.markdown(
-        """
-        <style>
-        .sidebar-footer {
-            position: fixed;
-            bottom: 20px;
-            text-align: center;
-            width: 100%;
-            font-size: 14px;
-        }
-        </style>
-        <div class="sidebar-footer">
-            Designed & Developed by <strong>Ahmed Gamal</strong>
-        </div>
-        """, 
+        '<div class="sidebar-footer">Designed & Developed by <strong>Ahmed Gamal</strong></div>',
         unsafe_allow_html=True
     )
 
     if page == "Risk Management":
         risk_management_page()
     elif page == "Add Trade":
-        add_trade_page()
+         add_trade_page()
     elif page == "Trade Journal":
-        trade_journal_page()
+         trade_journal_page()
     elif page == "Dashboard":
-        dashboard_page()
+         dashboard_page()
 
 if __name__ == "__main__":
     main()
