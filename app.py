@@ -126,25 +126,100 @@ def add_trade_page(journal_file):
         df = pd.read_csv(journal_file)
         df = pd.concat([df, pd.DataFrame([trade])], ignore_index=True)
         df.to_csv(journal_file, index=False)
-        st.success("Trade added!")
+        st.success("✅ Trade successfully added to journal!")
 
-def trade_journal_page(journal_file):
-    st.header("📒 Trade Journal")
+def trade_journal_page():
+    st.header("📁 Trade Journal")
+
     df = pd.read_csv(journal_file)
-    if df.empty:
-        st.write("No trades yet.")
-    else:
-        st.dataframe(df)
+
+    st.write(f"Total Trades Recorded: {len(df)}")
+
+    ticker_filter = st.text_input("Filter by Ticker Symbol (optional)")
+    date_filter_start = st.date_input("From Date", value=datetime(2023, 1, 1))
+    date_filter_end = st.date_input("To Date", value=datetime.now())
+
+    filtered_df = df.copy()
+
+    if ticker_filter:
+        filtered_df = filtered_df[filtered_df["Ticker Symbol"].str.contains(ticker_filter, case=False)]
+
+    filtered_df["Entry Time"] = pd.to_datetime(filtered_df["Entry Time"], errors="coerce")
+    filtered_df = filtered_df[
+        (filtered_df["Entry Time"] >= pd.to_datetime(date_filter_start)) &
+        (filtered_df["Entry Time"] <= pd.to_datetime(date_filter_end))
+    ]
+
+    if filtered_df.empty:
+        st.warning("⚠️ No trades found for the selected period.")
+        return
+
+    # عرض الجدول
+    st.dataframe(filtered_df.reset_index(drop=True))
+
+    # زر حذف لكل صفقة
+    st.subheader("🗑️ Delete Trades:")
+    for idx, row in filtered_df.iterrows():
+        trade_summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
+        if st.button(f"❌ Delete: {trade_summary}", key=f"del_{idx}"):
+            df.drop(index=idx, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            df.to_csv(journal_file, index=False)
+            st.success(f"✅ Deleted trade: {trade_summary}")
+            st.experimental_rerun()
 
 def dashboard_page(journal_file):
-    st.header("📈 Dashboard")
+     st.header("📈 Trading Performance Dashboard")
+
     df = pd.read_csv(journal_file)
     if df.empty:
-        st.write("No trades to show.")
-    else:
-        df["Cumulative PnL"] = df["Net P&L"].cumsum()
-        fig = px.line(df, y="Cumulative PnL", title="Cumulative PnL Over Time")
-        st.plotly_chart(fig)
+        st.warning("No trades recorded yet.")
+        return
+
+    st.subheader("📅 Filter by Date Range:")
+    date_filter_start = st.date_input("From Date", value=datetime(2023, 1, 1), key="dash_start")
+    date_filter_end = st.date_input("To Date", value=datetime.now(), key="dash_end")
+
+    df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
+    filtered_df = df[
+        (df["Entry Time"] >= pd.to_datetime(date_filter_start)) &
+        (df["Entry Time"] <= pd.to_datetime(date_filter_end))
+    ]
+
+    if filtered_df.empty:
+        st.warning("⚠️ No trades found for the selected period.")
+        return
+
+    filtered_df["Net P&L"] = pd.to_numeric(filtered_df["Net P&L"], errors="coerce")
+    filtered_df["R Multiple"] = pd.to_numeric(filtered_df["R Multiple"], errors="coerce")
+
+    total_trades = len(filtered_df)
+    winning_trades = filtered_df[filtered_df["Net P&L"] > 0]
+    losing_trades = filtered_df[filtered_df["Net P&L"] <= 0]
+    win_rate = (len(winning_trades) / total_trades) * 100 if total_trades > 0 else 0
+    avg_win = winning_trades["Net P&L"].mean() if not winning_trades.empty else 0
+    avg_loss = losing_trades["Net P&L"].mean() if not losing_trades.empty else 0
+    total_pnl = filtered_df["Net P&L"].sum()
+    avg_r = filtered_df["R Multiple"].mean()
+    max_gain = filtered_df["Net P&L"].max()
+    max_loss = filtered_df["Net P&L"].min()
+
+    st.metric("Total Trades", total_trades)
+    st.metric("Win Rate %", f"{win_rate:.2f}%")
+    st.metric("Total Net P&L", f"${total_pnl:.2f}")
+    st.metric("Average R Multiple", f"{avg_r:.2f}")
+    st.metric("Max Gain", f"${max_gain:.2f}")
+    st.metric("Max Loss", f"${max_loss:.2f}")
+
+    st.subheader("📈 Equity Curve")
+    filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
+    fig = px.line(filtered_df, y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    st.plotly_chart(fig)
+
+    st.subheader("🏷️ Performance by Ticker Symbol")
+    ticker_perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
+    fig_bar = px.bar(ticker_perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
+    st.plotly_chart(fig_bar)
 
 def main():
     set_dark_theme()
@@ -162,19 +237,19 @@ def main():
 
         st.sidebar.image("logo.png", width=150)
         st.sidebar.title(f"Welcome, {user}")
+        st.sidebar.title("Trading Risk Management & Journaling")
         page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
         st.sidebar.markdown(
             '''
             <style>
             .sidebar-footer {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                text-align: center;
-                font-size: 14px;
-                color: white;
+                 position: fixed;
+            bottom: 20px;
+            text-align: left;
+            width: 100%;
+            font-size: 15px;
+
             }
             </style>
             <div class="sidebar-footer">
