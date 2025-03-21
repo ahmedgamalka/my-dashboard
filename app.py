@@ -282,7 +282,8 @@ def main():
         .sidebar-footer {
             position: fixed;
             bottom: 20px;
-            left: 20px;
+            margin-left: auto;
+            margin-right: auto;
             text-align: left;
             width: 100%;
             font-size: 15px;
