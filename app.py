@@ -162,7 +162,7 @@ def trade_journal_page(journal_file):
             st.success(f"✅ Deleted trade: {summary}")
             st.rerun()
 
-def dashboard_page():
+def dashboard_page(journal_file):
     st.header("📈 Trading Performance Dashboard")
 
     df = pd.read_csv(journal_file)
@@ -215,6 +215,7 @@ def dashboard_page():
     fig_bar = px.bar(ticker_perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
     st.plotly_chart(fig_bar)
 
+
 def main():
     set_dark_theme()
     if "username" not in st.session_state:
@@ -230,6 +231,7 @@ def main():
             ]).to_csv(journal_file, index=False)
 
         st.sidebar.image("logo.png", width=150)
+        st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
         page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
@@ -241,6 +243,7 @@ def main():
                 bottom: 20px;
                 left: 50%;
                 transform: translateX(-50%);
+                margin-left: 20px;
                 text-align: center;
                 font-size: 14px;
                 color: white;
