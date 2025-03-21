@@ -208,6 +208,7 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
+
     st.sidebar.title("Trading Risk Management & Journaling")
     page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
