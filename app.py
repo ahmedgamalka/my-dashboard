@@ -283,7 +283,6 @@ def main():
             position: fixed;
             bottom: 20px;
             margin-left: 10%;
-            margin-right: 10%;
             text-align: left;
             width: 100%;
             font-size: 15px;
