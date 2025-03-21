@@ -209,7 +209,6 @@ def main():
         <style>
         [data-testid="stSidebar"] img {
             display: block;
-            position: fixed;
             width: 100%;
             margin-left: auto;
             margin-right: auto;
@@ -243,7 +242,7 @@ def main():
         .sidebar-footer {
             position: fixed;
             bottom: 20px;
-            text-align: left;
+            text-align: center;
             width: 100%;
             font-size: 14px;
         }
