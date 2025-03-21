@@ -267,8 +267,15 @@ def dashboard_page():
 # ------------------ Sidebar Navigation ------------------
 def main():
     set_dark_theme()
+    
+    # ✅ ضبط الـ Favicon والـ Title في المتصفح
 
-    st.sidebar.title("📚 Trading Risk Management & Journaling")
+    st.set_page_config(
+    page_title="Trading Risk Management",
+    page_icon="favicon.ico"
+)
+    st.sidebar.image("logo.png", use_column_width=True)
+    st.sidebar.title("📈 Trading Risk Management & Journaling")
     page = st.sidebar.radio("Go to:", 
         ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
 
