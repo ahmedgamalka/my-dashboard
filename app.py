@@ -326,9 +326,9 @@ def main():
         )
 
         if st.sidebar.button("🚪 Logout", key="logout"):
-    if "username" in st.session_state:
-        del st.session_state["username"]
-        st.stop()
+            if "username" in st.session_state:
+                del st.session_state["username"]
+                st.stop()
 
         if page == "Risk Management":
             risk_management_page(journal_file)
