@@ -200,6 +200,11 @@ def dashboard_page(journal_file):
     fig = px.line(filtered, y="Cumulative PnL", title="Cumulative Net P&L Over Time")
     st.plotly_chart(fig)
 
+    st.subheader("🏷️ Performance by Ticker Symbol")
+    perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
+    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
+    st.plotly_chart(fig_bar)
+
 # التطبيق الأساسي
 def main():
     set_dark_theme()
