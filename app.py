@@ -5,7 +5,11 @@ import os
 from hashlib import sha256
 from datetime import datetime
 
-st.set_page_config(page_title="Trading Journal", page_icon="📈")
+st.set_page_config(
+    page_title="Trading Journal",
+    page_icon="https://raw.githubusercontent.com/ahmedgamalka/my-dashboard/refs/heads/main/favicon.ico"
+)
+
 
 # تفعيل الوضع الداكن
 def set_dark_theme():
