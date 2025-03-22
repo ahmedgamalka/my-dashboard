@@ -342,6 +342,62 @@ def dashboard_page(journal_file):
         with open(pdf_file, "rb") as f:
             st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
+def documentation_page():
+    st.header("📚 Documentation — User Guide")
+
+    st.subheader("1️⃣ Risk Management Page")
+    st.write("""
+    - **Account Balance**: Your total trading capital.
+    - **Commission per Share**: The broker's fee per share.
+    - **Risk % per Trade**: How much of your capital you're willing to risk in one trade (recommended: 1%–2%).
+    - **Entry Price / Stop Loss**: Define entry and exit conditions.
+    - **R/R Ratio**: Desired Reward-to-Risk ratio.
+    - After calculation, you'll see position size, potential reward, risk amount, and smart tips.
+    """)
+
+    st.subheader("2️⃣ Add Trade Page")
+    st.write("""
+    - Add every trade with its details: entry, exit, size, stop loss, target price.
+    - You can also note down the indicator and strategy you used.
+    - The trade gets stored automatically in your personal journal file.
+    """)
+
+    st.subheader("3️⃣ Trade Journal Page")
+    st.write("""
+    - View and filter all your saved trades by ticker and date range.
+    - Export your trades as a PDF.
+    - Delete unwanted trades with confirmation prompts.
+    """)
+
+    st.subheader("4️⃣ Dashboard Page")
+    st.write("""
+    - See key trading stats: Win Rate, Average R, Max Gain/Loss.
+    - Visual equity curve to track cumulative performance.
+    - Performance by ticker symbols.
+    - Export a full dashboard summary (with charts) as a PDF.
+    """)
+
+    st.subheader("💡 Key Definitions")
+    st.markdown("""
+    - **Position Size**: Number of shares you can trade without exceeding your max risk.
+    - **R/R Ratio**: Reward-to-Risk ratio — aim for at least 2:1.
+    - **Net P&L**: Profit or Loss after fees.
+    - **R Multiple**: Profit/Loss relative to initial risk — >1 is good, <1 means loss or small gain.
+    - **Equity Curve**: Visual graph of your cumulative trading results.
+    """)
+
+    st.subheader("💡 Pro Tips for Traders")
+    st.markdown("""
+    - Never risk more than 2% of your capital on a single trade.
+    - Stick to your plan and avoid revenge trading.
+    - Review your journal regularly to learn from mistakes.
+    - Trade with discipline — not emotions.
+    """)
+
+    st.success("This guide will always be here to help you master your trading dashboard! 🚀")
+
+
+
 # التطبيق الأساسي
 def main():
     set_dark_theme()
@@ -360,7 +416,7 @@ def main():
         st.sidebar.image("logo.png", width=100)
         st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
-        page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
+        page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard", "Documentation"])
 
         st.sidebar.markdown(
             '''
@@ -393,6 +449,8 @@ def main():
             trade_journal_page(journal_file)
         elif page == "Dashboard":
             dashboard_page(journal_file)
+        elif page == "📚 Documentation":
+            documentation_page()
 
 if __name__ == "__main__":
     main()
