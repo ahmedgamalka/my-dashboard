@@ -191,19 +191,19 @@ def dashboard_page(journal_file):
         st.warning("⚠️ No trades found for the selected period.")
         return
 
-    filtered_df["Net P&L"] = pd.to_numeric(filtered_df["Net P&L"], errors="coerce")
-    filtered_df["R Multiple"] = pd.to_numeric(filtered_df["R Multiple"], errors="coerce")
+    filtered["Net P&L"] = pd.to_numeric(filtered["Net P&L"], errors="coerce")
+    filtered["R Multiple"] = pd.to_numeric(filtered["R Multiple"], errors="coerce")
 
-    total_trades = len(filtered_df)
-    winning_trades = filtered_df[filtered_df["Net P&L"] > 0]
-    losing_trades = filtered_df[filtered_df["Net P&L"] <= 0]
+    total_trades = len(filtered)
+    winning_trades = filtered[filtered["Net P&L"] > 0]
+    losing_trades = filtered[filtered["Net P&L"] <= 0]
     win_rate = (len(winning_trades) / total_trades) * 100 if total_trades > 0 else 0
     avg_win = winning_trades["Net P&L"].mean() if not winning_trades.empty else 0
     avg_loss = losing_trades["Net P&L"].mean() if not losing_trades.empty else 0
-    total_pnl = filtered_df["Net P&L"].sum()
-    avg_r = filtered_df["R Multiple"].mean()
-    max_gain = filtered_df["Net P&L"].max()
-    max_loss = filtered_df["Net P&L"].min()
+    total_pnl = filtered["Net P&L"].sum()
+    avg_r = filtered["R Multiple"].mean()
+    max_gain = filtered["Net P&L"].max()
+    max_loss = filtered["Net P&L"].min()
 
     st.metric("Total Trades", len(filtered))
     st.metric("Total Net P&L", f"${filtered['Net P&L'].sum():.2f}")
