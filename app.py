@@ -139,11 +139,12 @@ def trade_journal_page(journal_file):
     df = pd.read_csv(journal_file)
     df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
     df = df.dropna(subset=["Entry Time"])
-    st.write(f"Total Trades Recorded: {len(df)}")
 
+    st.write(f"Total Trades Recorded: {len(df)}")
     ticker_filter = st.text_input("Filter by Ticker Symbol (optional)")
     date_filter_start = st.date_input("From Date", value=datetime(2023, 1, 1))
     date_filter_end = st.date_input("To Date", value=datetime.now())
+    date_filter_end_datetime = pd.to_datetime(date_filter_end) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
 
     filtered_df = df.copy()
     if ticker_filter:
@@ -151,7 +152,7 @@ def trade_journal_page(journal_file):
 
     filtered_df = filtered_df[
         (filtered_df["Entry Time"] >= pd.to_datetime(date_filter_start)) &
-        (filtered_df["Entry Time"] <= pd.to_datetime(date_filter_end))
+        (filtered_df["Entry Time"] <= date_filter_end_datetime)
     ]
 
     if filtered_df.empty:
@@ -179,10 +180,11 @@ def dashboard_page(journal_file):
     st.subheader("📅 Filter by Date Range")
     start_date = st.date_input("Start Date", value=datetime(2023, 1, 1))
     end_date = st.date_input("End Date", value=datetime.now())
+    end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
 
     filtered = df[
         (df["Entry Time"] >= pd.to_datetime(start_date)) &
-        (df["Entry Time"] <= pd.to_datetime(end_date))
+        (df["Entry Time"] <= end_date_dt)
     ]
 
     if filtered.empty:
@@ -197,11 +199,6 @@ def dashboard_page(journal_file):
     filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
     fig = px.line(filtered, y="Cumulative PnL", title="Cumulative Net P&L Over Time")
     st.plotly_chart(fig)
-
-    st.subheader("🏷️ Performance by Ticker Symbol")
-    perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
-    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
-    st.plotly_chart(fig_bar)
 
 # التطبيق الأساسي
 def main():
@@ -230,8 +227,9 @@ def main():
                 bottom: 20px;
                 left: 50%;
                 transform: translateX(-50%);
-                text-align: center;
-                font-size: 14px;
+                margin-left: 20px;
+                text-align: left;
+                font-size: 16px;
                 color: white;
             }
             </style>
