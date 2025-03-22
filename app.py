@@ -134,6 +134,24 @@ def add_trade_page(journal_file):
         st.success("✅ Trade successfully added to journal!")
 
 # عرض وتصفية وحذف الصفقات
+from fpdf import FPDF
+
+def export_journal_to_pdf(filtered_df, user):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=10)
+    pdf.cell(200, 10, txt=f"Trading Journal Export for {user}", ln=True, align='C')
+    pdf.ln(10)
+
+    for index, row in filtered_df.iterrows():
+        line = f"{row['Entry Time']} | {row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
+        pdf.multi_cell(0, 8, line)
+        pdf.ln(2)
+
+    pdf_file = f"trading_journal_{user}.pdf"
+    pdf.output(pdf_file)
+    return pdf_file
+
 def trade_journal_page(journal_file):
     st.header("📁 Trade Journal")
     df = pd.read_csv(journal_file)
@@ -161,6 +179,12 @@ def trade_journal_page(journal_file):
 
     st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
 
+    # زرار التصدير كـ PDF
+    if st.button("📥 Export Journal to PDF"):
+        pdf_file = export_journal_to_pdf(filtered_df, st.session_state['username'])
+        with open(pdf_file, "rb") as f:
+            st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
+
     st.subheader("🗑️ Delete Trades:")
     for idx, row in filtered_df.iterrows():
         summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']}"
@@ -171,6 +195,20 @@ def trade_journal_page(journal_file):
             st.rerun()
 
 # داشبورد التحليل
+def export_dashboard_summary_to_pdf(summary, user):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=f"Dashboard Summary Export for {user}", ln=True, align='C')
+    pdf.ln(10)
+
+    for key, value in summary.items():
+        pdf.cell(0, 10, f"{key}: {value}", ln=True)
+
+    pdf_file = f"dashboard_summary_{user}.pdf"
+    pdf.output(pdf_file)
+    return pdf_file
+
 def dashboard_page(journal_file):
     st.header("📈 Trading Performance Dashboard")
     df = pd.read_csv(journal_file)
@@ -227,6 +265,24 @@ def dashboard_page(journal_file):
     fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
     st.plotly_chart(fig_bar)
 
+    # ملخص للـ PDF
+    summary = {
+        "Total Trades": total_trades,
+        "Win Rate %": f"{win_rate:.2f}%",
+        "Total Net P&L": f"${total_pnl:.2f}",
+        "Average Win": f"${avg_win:.2f}",
+        "Average Loss": f"${avg_loss:.2f}",
+        "Average R Multiple": f"{avg_r:.2f}",
+        "Max Gain": f"${max_gain:.2f}",
+        "Max Loss": f"${max_loss:.2f}"
+    }
+
+    # زرار تصدير الـ Dashboard كـ PDF
+    if st.button("📥 Export Dashboard Summary to PDF"):
+        pdf_file = export_dashboard_summary_to_pdf(summary, st.session_state['username'])
+        with open(pdf_file, "rb") as f:
+            st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
+
 # التطبيق الأساسي
 def main():
     set_dark_theme()
@@ -252,7 +308,6 @@ def main():
             .sidebar-footer {
                 position: fixed;
                 bottom: 20px;
-                left: 50%;
                 transform: translateX(-50%);
                 margin-left: 20px;
                 text-align: left;
