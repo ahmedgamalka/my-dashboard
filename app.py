@@ -73,6 +73,7 @@ def highlight_rows(row):
     return ["", ""]
 
 # صفحة إدارة المخاطر
+
 def risk_management_page(journal_file):
     st.header("📊 Risk Management")
     acc_bal = st.number_input("Account Balance ($)", min_value=0.0, value=1000.0, step=100.0)
@@ -87,10 +88,24 @@ def risk_management_page(journal_file):
 
     if st.button("Calculate"):
         risk_per_share = abs(entry - stop)
+
+        # ✅ التحقق من قيمة الفارق بين الدخول ووقف الخسارة
+        if risk_per_share < 0.01:
+            st.warning("⚠️ The difference between Entry Price and Stop Loss is too small or zero.")
+            st.info("💡 Tip: Increase the distance between Entry Price and Stop Loss to allow proper risk calculations.")
+            return
+
         pos_size = int(max_loss / risk_per_share)
         take_profit = entry + (risk_per_share * rr_ratio)
         potential_reward = (take_profit - entry) * pos_size
         risk_dollar = pos_size * risk_per_share
+
+        # ✅ التحقق من أن المخاطرة بالدولار ليست صفر
+        if risk_dollar == 0:
+            st.warning("⚠️ Risk amount calculated as zero. Please adjust your stop loss or entry price.")
+            st.info("💡 Tip: Make sure there's a meaningful difference between Entry and Stop Loss prices.")
+            return
+
         actual_rr = potential_reward / risk_dollar
         gain_pct = (potential_reward / (pos_size * entry)) * 100
 
@@ -105,7 +120,13 @@ def risk_management_page(journal_file):
             ]
         })
 
-        st.dataframe(df.style.apply(highlight_rows, axis=1), use_container_width=True)
+        st.dataframe(df.style.apply(highlight_rows, axis=1))
+
+        # ✅ نصيحة إضافية لو R/R أقل من 1
+        if actual_rr < 1:
+            st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, which is below 1.0.")
+            st.info("💡 Tip: Consider adjusting your stop loss or target to improve the reward-to-risk ratio.")
+
 
 # إضافة صفقة جديدة
 def add_trade_page(journal_file):
