@@ -325,9 +325,10 @@ def main():
             unsafe_allow_html=True
         )
 
-        if st.sidebar.button("🚪 Logout"):
-            st.session_state.pop("username", None)
-            st.experimental_rerun()
+        if st.sidebar.button("🚪 Logout", key="logout"):
+    if "username" in st.session_state:
+        del st.session_state["username"]
+        st.stop()
 
         if page == "Risk Management":
             risk_management_page(journal_file)
