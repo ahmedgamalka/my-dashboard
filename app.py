@@ -191,15 +191,17 @@ def trade_journal_page(journal_file):
 
     st.subheader("🗑️ Delete Trades:")
     for idx, row in filtered_df.iterrows():
-        summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']}"
+        summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
         if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
-            df = df.drop(row.name).reset_index(drop=True)
-            df.to_csv(journal_file, index=False)
-            st.success(f"✅ Deleted trade: {summary}")
-            st.rerun()
+            st.warning(f"Are you sure you want to delete this trade?\n{summary}")
+            if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
+                df = df.drop(row.name).reset_index(drop=True)
+                df.to_csv(journal_file, index=False)
+                st.success(f"✅ Deleted trade: {summary}")
+                st.experimental_rerun()
 
 # داشبورد التحليل
-def export_dashboard_summary_to_pdf(summary, user):
+def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -209,6 +211,20 @@ def export_dashboard_summary_to_pdf(summary, user):
     for key, value in summary.items():
         pdf.cell(0, 10, f"{key}: {value}", ln=True)
 
+    # رسم Equity Curve
+    filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
+    fig, ax = plt.subplots()
+    ax.plot(filtered_df['Entry Time'], filtered_df["Cumulative PnL"], marker='o')
+    ax.set_title("Cumulative Net P&L Over Time")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Cumulative PnL")
+
+    img_buf = io.BytesIO()
+    plt.savefig(img_buf, format="png")
+    plt.close(fig)
+    img_buf.seek(0)
+
+    pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
@@ -250,12 +266,16 @@ def dashboard_page(journal_file):
     max_loss = filtered["Net P&L"].min()
 
     # عرض المقاييس
-    st.metric("Total Trades", total_trades)
-    st.metric("Win Rate %", f"{win_rate:.2f}%")
-    st.metric("Total Net P&L", f"${total_pnl:.2f}")
-    st.metric("Average R Multiple", f"{avg_r:.2f}")
-    st.metric("Max Gain", f"${max_gain:.2f}")
-    st.metric("Max Loss", f"${max_loss:.2f}")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Trades", total_trades)
+        st.metric("Win Rate %", f"{win_rate:.2f}%")
+    with col2:
+        st.metric("Total Net P&L", f"${total_pnl:.2f}")
+        st.metric("Average R Multiple", f"{avg_r:.2f}")
+    with col3:
+        st.metric("Max Gain", f"${max_gain:.2f}")
+        st.metric("Max Loss", f"${max_loss:.2f}")
 
     # رسم منحنى الربح التراكمي
     st.subheader("📈 Equity Curve")
