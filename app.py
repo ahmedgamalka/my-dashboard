@@ -449,7 +449,7 @@ def main():
             trade_journal_page(journal_file)
         elif page == "Dashboard":
             dashboard_page(journal_file)
-        elif page == "📚 Documentation":
+        elif page == "Documentation":
             documentation_page()
 
 if __name__ == "__main__":
