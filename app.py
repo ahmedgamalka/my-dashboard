@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import matplotlib.pyplot as plt
 import os
+import io
+from fpdf import FPDF
 from hashlib import sha256
 from datetime import datetime
 
