@@ -170,7 +170,10 @@ def trade_journal_page(journal_file):
     date_filter_start = st.date_input("From Date", value=datetime(2023, 1, 1))
     date_filter_end = st.date_input("To Date", value=datetime.now())
     date_filter_end_datetime = pd.to_datetime(date_filter_end) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
-
+    
+    st.session_state.date_filter_start = date_filter_start
+    st.session_state.date_filter_end = date_filter_end
+    
     filtered_df = df.copy()
     if ticker_filter:
         filtered_df = filtered_df[filtered_df["Ticker Symbol"].str.contains(ticker_filter, case=False)]
@@ -238,9 +241,17 @@ def dashboard_page(journal_file):
     df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
     df = df.dropna(subset=["Entry Time"])
 
+    if "dash_start" not in st.session_state:
+        st.session_state.dash_start = datetime(2023, 1, 1)
+    if "dash_end" not in st.session_state:
+        st.session_state.dash_end = datetime.now()
+
     st.subheader("📅 Filter by Date Range")
-    start_date = st.date_input("Start Date", value=datetime(2023, 1, 1))
-    end_date = st.date_input("End Date", value=datetime.now())
+    start_date = st.date_input("Start Date", value=st.session_state.dash_start)
+    end_date = st.date_input("End Date", value=st.session_state.dash_end)
+    st.session_state.dash_start = start_date
+    st.session_state.dash_end = end_date
+
     end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
 
     filtered = df[
@@ -306,7 +317,7 @@ def dashboard_page(journal_file):
 
     # زرار تصدير الـ Dashboard كـ PDF
     if st.button("📥 Export Dashboard Summary to PDF"):
-        pdf_file = export_dashboard_summary_to_pdf(summary, st.session_state['username'])
+        pdf_file = export_dashboard_summary_to_pdf(summary, st.session_state['username'], filtered)
         with open(pdf_file, "rb") as f:
             st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
