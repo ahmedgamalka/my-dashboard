@@ -298,7 +298,7 @@ def main():
                 "Commission", "Net P&L", "Custom Close", "Used Indicator", "Used Strategy", "Notes"
             ]).to_csv(journal_file, index=False)
 
-        st.sidebar.image("logo.png", width=150)
+        st.sidebar.image("logo.png", width=100)
         st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
         page = st.sidebar.radio("Go to:", ["Risk Management", "Add Trade", "Trade Journal", "Dashboard"])
@@ -309,7 +309,6 @@ def main():
             .sidebar-footer {
                 position: fixed;
                 bottom: 20px;
-                margin-left: 20px;
                 text-align: left;
                 font-size: 16px;
                 color: white;
