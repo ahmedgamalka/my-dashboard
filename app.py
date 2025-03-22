@@ -191,9 +191,11 @@ def dashboard_page(journal_file):
         st.warning("⚠️ No trades found for the selected period.")
         return
 
+    # تحويل الأعمدة الرقمية للتأكد من عدم وجود مشاكل
     filtered["Net P&L"] = pd.to_numeric(filtered["Net P&L"], errors="coerce")
     filtered["R Multiple"] = pd.to_numeric(filtered["R Multiple"], errors="coerce")
 
+    # حساب الإحصائيات
     total_trades = len(filtered)
     winning_trades = filtered[filtered["Net P&L"] > 0]
     losing_trades = filtered[filtered["Net P&L"] <= 0]
@@ -205,15 +207,21 @@ def dashboard_page(journal_file):
     max_gain = filtered["Net P&L"].max()
     max_loss = filtered["Net P&L"].min()
 
-    st.metric("Total Trades", len(filtered))
-    st.metric("Total Net P&L", f"${filtered['Net P&L'].sum():.2f}")
-    st.metric("Win Rate %", f"{(filtered['Net P&L'] > 0).mean() * 100:.2f}%")
+    # عرض المقاييس
+    st.metric("Total Trades", total_trades)
+    st.metric("Win Rate %", f"{win_rate:.2f}%")
+    st.metric("Total Net P&L", f"${total_pnl:.2f}")
+    st.metric("Average R Multiple", f"{avg_r:.2f}")
+    st.metric("Max Gain", f"${max_gain:.2f}")
+    st.metric("Max Loss", f"${max_loss:.2f}")
 
+    # رسم منحنى الربح التراكمي
     st.subheader("📈 Equity Curve")
     filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
     fig = px.line(filtered, y="Cumulative PnL", title="Cumulative Net P&L Over Time")
     st.plotly_chart(fig)
 
+    # أداء الأسهم حسب Ticker
     st.subheader("🏷️ Performance by Ticker Symbol")
     perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
     fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
