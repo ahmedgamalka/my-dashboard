@@ -324,45 +324,49 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf.cell(200, 10, txt=f"Dashboard Summary Export for {user}", ln=True, align='C')
     pdf.ln(10)
 
-    # إضافة ملخص النتائج في جدول
+    # إضافة جدول بالنتائج
     pdf.set_font("Arial", size=10)
-    pdf.cell(60, 8, "Metric", border=1)
+    pdf.cell(80, 8, "Metric", border=1)
     pdf.cell(60, 8, "Value", border=1, ln=True)
     for key, value in summary.items():
-        pdf.cell(60, 8, key, border=1)
+        pdf.cell(80, 8, str(key), border=1)
         pdf.cell(60, 8, str(value), border=1, ln=True)
+    pdf.ln(10)
 
-    # Equity curve
+    # رسم Equity Curve
     filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
-    fig_eq = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Equity Curve")
+    fig = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
 
-    eq_img = f"equity_curve_{user}.png"
-    fig_eq.write_image(eq_img, engine="kaleido")
+    # تصدير باستخدام kaleido
+    img_buf = io.BytesIO()
+    fig.write_image(img_buf, format="png", engine="kaleido")
+    img_buf.seek(0)
+    pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
     pdf.ln(10)
-    pdf.image(eq_img, x=10, w=180)
 
-    # Bar chart of performance by ticker
+    # Performance by Ticker Bar Chart
     perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
-    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Performance by Ticker Symbol")
+    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
 
-    bar_img = f"bar_chart_{user}.png"
-    fig_bar.write_image(bar_img, engine="kaleido")
+    img_buf = io.BytesIO()
+    fig_bar.write_image(img_buf, format="png", engine="kaleido")
+    img_buf.seek(0)
+    pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
     pdf.ln(10)
-    pdf.image(bar_img, x=10, w=180)
 
-        # رسم Win vs Loss Distribution
-    win_loss_counts = filtered_df.copy()
-    win_loss_counts['Result'] = win_loss_counts['Net P&L'].apply(lambda x: 'Win' if x > 0 else 'Loss')
-    win_loss_summary = win_loss_counts['Result'].value_counts().reset_index()
-    win_loss_summary.columns = ['Result', 'Count']
+    # Pie chart Win vs Loss Distribution
+    win_count = len(filtered_df[filtered_df["Net P&L"] > 0])
+    loss_count = len(filtered_df[filtered_df["Net P&L"] <= 0])
+    fig_pie = px.pie(
+        names=["Wins", "Losses"],
+        values=[win_count, loss_count],
+        title="Win vs Loss Distribution"
+    )
 
-    fig_pie = px.pie(win_loss_summary, values='Count', names='Result', title='Win vs Loss Distribution')
-    pie_img = f"win_loss_pie_{user}.png"
-    fig_pie.write_image(pie_img, engine="kaleido")
-
-    pdf.ln(10)
-    pdf.image(pie_img, x=10, w=150)
-
+    img_buf = io.BytesIO()
+    fig_pie.write_image(img_buf, format="png", engine="kaleido")
+    img_buf.seek(0)
+    pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
 
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
