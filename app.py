@@ -274,7 +274,7 @@ def trade_journal_page():
             if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
                 delete_trade_from_gsheet(user, row)
                 st.success(f"✅ Deleted trade: {summary}")
-                st.experimental_rerun()
+                st.rerun()
 
 
 
@@ -499,7 +499,7 @@ def main():
         if st.sidebar.button("🚪 Logout", key="logout"):
             if "username" in st.session_state:
                 del st.session_state["username"]
-                st.experimental_rerun()
+                st.rerun()
 
         # الانتقال بين الصفحات
         if page == "Risk Management":
