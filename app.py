@@ -317,22 +317,6 @@ def trade_journal_page():
 import io
 import tempfile
 
-# دالة تصدير ملخص الداشبورد إلى PDF
-ChatGPT said:
-المشكلة هنا يا باشا إن pdf.image() في مكتبة fpdf ما بتقبلش BytesIO بشكل مباشر، ولازم يكون عندك مسار فعلي لملف صورة على الهارد ديسك.
-
-الحل:
-
-نحفظ الصورة المؤقتة على القرص باستخدام tempfile.NamedTemporaryFile
-
-وبعدين نحط المسار بتاع الصورة في pdf.image()
-
-✅ الكود المعدل لحل المشكلة:
-python
-Copy
-Edit
-import tempfile
-
 def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf = FPDF()
     pdf.add_page()
@@ -383,6 +367,7 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
+
 # صفحة الداشبورد
 def dashboard_page():
     st.header("📈 Trading Performance Dashboard")
