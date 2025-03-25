@@ -226,29 +226,29 @@ def trade_journal_page():
 
         # زرار التصدير كـ PDF
         if st.button("📥 Export Journal to PDF"):
-            pdf_file = export_journal_to_pdf(df, st.session_state['username'])
+            pdf_file = export_journal_to_pdf(df, user)
             with open(pdf_file, "rb") as f:
                 st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
         st.subheader("🗑️ Delete Trades:")
-for idx, row in df.iterrows():
-    summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-    if st.button(f"❌ Delete: {summary}", key=f"delete_{idx}"):
-        st.warning(f"Are you sure you want to delete this trade?\n{summary}")
-        if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_delete_{idx}"):
-            all_data = sheet.get_all_records()
-            df_all = pd.DataFrame(all_data)
-            df_new = df_all[
-                ~((df_all["Entry Time"] == row["Entry Time"]) & (df_all["Ticker Symbol"] == row["Ticker Symbol"]))
-            ]
-            sheet.clear()
-            sheet.append_row(list(df_new.columns))
-            for i, record in df_new.iterrows():
-                sheet.append_row(record.tolist())
-            st.success(f"✅ Deleted trade: {summary}")
-            st.rerun()
+        for idx, row in df.iterrows():
+            summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
+            if st.button(f"❌ Delete: {summary}", key=f"delete_{idx}"):
+                st.warning(f"Are you sure you want to delete this trade?\n{summary}")
+                if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_delete_{idx}"):
+                    all_data = sheet.get_all_records()
+                    df_all = pd.DataFrame(all_data)
+                    df_new = df_all[
+                        ~((df_all["Entry Time"] == row["Entry Time"]) & (df_all["Ticker Symbol"] == row["Ticker Symbol"]))
+                    ]
+                    sheet.clear()
+                    sheet.append_row(list(df_new.columns))
+                    for i, record in df_new.iterrows():
+                        sheet.append_row(record.tolist())
+                    st.success(f"✅ Deleted trade: {summary}")
+                    st.rerun()
 
-
+            
         # Export as PDF
         if st.button("📥 Export Journal to PDF"):
             pdf_file = export_journal_to_pdf(df, user)
