@@ -204,26 +204,6 @@ def export_journal_to_pdf(filtered_df, user):
     pdf.output(pdf_file)
     return pdf_file
 
-# صفحة Trade Journal
-def delete_trade_from_gsheet(user, trade_row):
-    client = connect_gsheet()
-    sheet = client.open("Trading_Journal_Master").worksheet(user)
-    records = sheet.get_all_records()
-    df = pd.DataFrame(records)
-    # حدد الصف الذي يطابق الـ Entry Time و Ticker Symbol
-    updated_df = df[
-        ~((df["Entry Time"] == trade_row["Entry Time"]) & (df["Ticker Symbol"] == trade_row["Ticker Symbol"]))
-    ]
-    # امسح الشيت وأعد كتابة البيانات
-    sheet.clear()
-    sheet.append_row(list(updated_df.columns))
-    for _, row in updated_df.iterrows():
-        sheet.append_row(row.tolist())
-
-
-    st.success("✅ Trade successfully deleted.")
-
-
 
 def trade_journal_page():
     st.header("📁 Trade Journal")
@@ -242,27 +222,32 @@ def trade_journal_page():
             st.warning("⚠️ No trades recorded yet.")
             return
 
-        st.subheader("📊 All Trades")
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df.reset_index(drop=True), use_container_width=True)
 
-        st.subheader("📋 Manage & Delete Trades:")
+        # زرار التصدير كـ PDF
+        if st.button("📥 Export Journal to PDF"):
+            pdf_file = export_journal_to_pdf(df, st.session_state['username'])
+            with open(pdf_file, "rb") as f:
+                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
+
+        st.subheader("🗑️ Delete Trades:")
         for idx, row in df.iterrows():
-            trade_card = f"""
-            <div style="border: 1px solid #444; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; background-color: #1c1c1c;">
-                <div>
-                    <strong>{row['Ticker Symbol']}</strong> | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}
-                </div>
-                <div>
-                    <form action="" method="post">
-                        <button style="background-color:red; color:white; border:none; padding: 5px 10px; border-radius: 5px; cursor:pointer;" name="delete" type="submit" formaction="#">❌ Delete</button>
-                    </form>
-                </div>
-            </div>
-            """
-            st.markdown(trade_card, unsafe_allow_html=True)
-            if st.button(f"Confirm Delete: {row['Ticker Symbol']} @ {row['Entry Price']}", key=f"del_{idx}"):
-                delete_trade_from_gsheet(user, row)
-                st.experimental_rerun()
+            summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
+            if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
+                st.warning(f"Are you sure you want to delete this trade?\n{summary}")
+                if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
+                    all_data = sheet.get_all_records()
+                    df_all = pd.DataFrame(all_data)
+                    df_new = df_all[
+                        ~((df_all["Entry Time"] == row["Entry Time"]) & (df_all["Ticker Symbol"] == row["Ticker Symbol"]))
+                    ]
+                    sheet.clear()
+                    sheet.append_row(list(df_new.columns))
+                    for i, record in df_new.iterrows():
+                        sheet.append_row(record.tolist())
+                    st.success(f"✅ Deleted trade: {summary}")
+                    st.experimental_rerun()
+
 
         # Export as PDF
         if st.button("📥 Export Journal to PDF"):
