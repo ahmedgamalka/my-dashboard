@@ -208,33 +208,42 @@ def export_journal_to_pdf(filtered_df, user):
 def delete_trade_from_gsheet(user, row_to_delete):
     client = connect_gsheet()
     sheet = client.open("Trading_Journal_Master").worksheet(user)
-    
-    # جلب جميع البيانات في DataFrame
+
+    # جلب جميع البيانات
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
-    
-    # عمل قناع للصف اللي هيتحذف
+
+    # التأكد إن الأعمدة الرقمية محولة بشكل صحيح
+    df["Entry Price"] = pd.to_numeric(df["Entry Price"], errors="coerce")
+    df["Exit Price"] = pd.to_numeric(df["Exit Price"], errors="coerce")
+    df["Net P&L"] = pd.to_numeric(df["Net P&L"], errors="coerce")
+
+    # عمل شرط مطابق على أكثر من عمود
     condition = (
-        (df['Ticker Symbol'] == row_to_delete['Ticker Symbol']) &
-        (df['Entry Time'] == row_to_delete['Entry Time']) &
-        (df['Entry Price'] == row_to_delete['Entry Price']) &
-        (df['Exit Price'] == row_to_delete['Exit Price']) &
-        (df['Net P&L'] == row_to_delete['Net P&L'])
+        (df["Ticker Symbol"] == row_to_delete["Ticker Symbol"]) &
+        (df["Entry Price"] == row_to_delete["Entry Price"]) &
+        (df["Exit Price"] == row_to_delete["Exit Price"]) &
+        (df["Entry Time"] == row_to_delete["Entry Time"]) &
+        (df["Net P&L"] == row_to_delete["Net P&L"])
     )
-    
-    # التأكد إنه موجود
+
+    # التأكد من وجوده
     if not condition.any():
-        st.warning("⚠️ Trade not found. It might have been already deleted.")
+        st.warning("⚠️ Trade not found. Might already be deleted.")
         return
-    
+
     # حذف الصف
     df_after_delete = df[~condition]
-    
-    # إعادة رفع البيانات
+
+    # مسح الورقة بالكامل
     sheet.clear()
-    sheet.append_row(list(df.columns))  # رفع ال headers
+    # إعادة رفع الأعمدة
+    sheet.append_row(list(df.columns))
     for _, record in df_after_delete.iterrows():
-        sheet.append_row(record.tolist())
+        sheet.append_row(record.astype(str).tolist())  # كله كنص لتجنب مشاكل فورمات
+
+    st.success("✅ Trade successfully deleted.")
+
 
 
 def trade_journal_page():
@@ -286,11 +295,9 @@ def trade_journal_page():
     for idx, row in df.iterrows():
         summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
         if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
-        # بعد الضغط على delete نعرض confirm فقط
-            if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
-                delete_trade_from_gsheet(user, row)
-                st.success(f"✅ Trade deleted: {summary}")
-                st.experimental_rerun()
+            delete_trade_from_gsheet(user, row)
+            st.experimental_rerun()
+
 
 
 
