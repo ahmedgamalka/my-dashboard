@@ -263,11 +263,11 @@ def trade_journal_page():
             if st.button(f"❌ Delete {summary}", key=f"delete_{row['Trade ID']}"):
                 st.session_state.trade_id_to_delete = row['Trade ID']
 
-        # تأكيد الحذف خارج اللوب
+        # التأكيد والحذف خارج اللوب
         if "trade_id_to_delete" in st.session_state:
             trade_id = st.session_state.trade_id_to_delete
             st.warning(f"Are you sure you want to delete trade ID: {trade_id}?")
-            if st.button("✅ Confirm Delete"):
+            if st.button("✅ Confirm Delete", key="confirm_delete_button"):
                 all_data = sheet.get_all_records()
                 df_all = pd.DataFrame(all_data)
                 df_new = df_all[df_all["Trade ID"] != trade_id]
@@ -277,7 +277,7 @@ def trade_journal_page():
                     sheet.append_row(record.tolist())
                 st.success(f"✅ Deleted trade with ID: {trade_id}")
                 del st.session_state.trade_id_to_delete
-                st.experimental_rerun()
+                st.rerun()   # ✅ استخدم st.rerun() هنا خارج اللوب!
 
 import io
 
