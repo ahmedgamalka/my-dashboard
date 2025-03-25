@@ -250,15 +250,15 @@ def trade_journal_page():
                 st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
         # زر الحذف
-   st.subheader("🗑️ Delete Trades:")
-for idx, row in df.iterrows():
-    summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-    if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
-        st.warning(f"Are you sure you want to delete this trade?\n{summary}")
-        if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
-            delete_trade_from_gsheet(user, row)
-            st.success(f"✅ Deleted trade: {summary}")
-            st.experimental_rerun()
+       st.subheader("🗑️ Delete Trades:")
+       for idx, row in df.iterrows():
+            summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
+            if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
+                st.warning(f"Are you sure you want to delete this trade?\n{summary}")
+            if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
+                delete_trade_from_gsheet(user, row)
+                st.success(f"✅ Deleted trade: {summary}")
+                st.experimental_rerun()
 
 
 
