@@ -144,17 +144,17 @@ def risk_management_page():
 def add_trade_page():
     st.header("➕ Add Trade")
     client = connect_gsheet()
-
+    
     if "username" in st.session_state:
         user = st.session_state["username"]
         try:
             sheet = client.open("Trading_Journal_Master").worksheet(user)
         except gspread.exceptions.WorksheetNotFound:
-            sheet = client.open("Trading_Journal_Master").add_worksheet(title=user, rows="1000", cols="20")
+            sheet = client.open("Trading_Journal_Master").add_worksheet(title=user, rows="1000", cols="21")
             sheet.append_row([
-                "Ticker Symbol", "Trade Direction", "Entry Price", "Entry Time", "Exit Price", "Exit Time",
-                "Position Size", "Risk", "Trade SL", "Target", "R Multiple", "Commission", "Net P&L",
-                "Used Indicator", "Used Strategy", "Notes"
+                "Trade ID", "Ticker Symbol", "Trade Direction", "Entry Price", "Entry Time", 
+                "Exit Price", "Exit Time", "Position Size", "Risk", "Trade SL", "Target", 
+                "R Multiple", "Commission", "Net P&L", "Used Indicator", "Used Strategy", "Notes"
             ])
 
         ticker = st.text_input("Ticker Symbol")
@@ -173,15 +173,23 @@ def add_trade_page():
             net_pnl = ((exit_price - entry) * size) - commission
             r_multiple = net_pnl / risk_val if risk_val > 0 else 0
 
+            # Get current max Trade ID
+            records = sheet.get_all_records()
+            if records:
+                trade_id = max(r["Trade ID"] for r in records) + 1
+            else:
+                trade_id = 1
+
             trade_row = [
-                ticker, "Long", entry,
+                trade_id, ticker, "Long", entry, 
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"), exit_price,
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"), size, risk_val, stop, target,
                 r_multiple, commission, net_pnl, used_indicator, used_strategy, notes
             ]
 
             sheet.append_row(trade_row)
-            st.success("✅ Trade successfully added to journal!")
+            st.success(f"✅ Trade {trade_id} added to journal!")
+
 
 
 
@@ -190,14 +198,20 @@ import streamlit as st
 import pandas as pd
 
 # دالة حذف الصفقة من Google Sheets
-def delete_trade_from_gsheet(user, entry_time, ticker):
+def delete_trade_from_gsheet(user, trade_id):
     client = connect_gsheet()
     sheet = client.open("Trading_Journal_Master").worksheet(user)
-    records = sheet.get_all_records()
-    for idx, record in enumerate(records, start=2):  # الصف الأول هو العنوان
-        if record["Entry Time"] == entry_time and record["Ticker Symbol"] == ticker:
-            sheet.delete_rows(idx)
-            break
+    all_data = sheet.get_all_records()
+    df_all = pd.DataFrame(all_data)
+
+    # حذف الصف من الداتا فريم
+    df_new = df_all[df_all["Trade ID"] != trade_id]
+
+    # مسح الشيت وكتابة البيانات الجديدة
+    sheet.clear()
+    sheet.append_row(list(df_new.columns))
+    for _, record in df_new.iterrows():
+        sheet.append_row(record.tolist())
 
 # دالة تصدير الجورنال كـ PDF
 def export_journal_to_pdf(filtered_df, user):
@@ -236,22 +250,13 @@ def trade_journal_page():
 
         st.dataframe(df.reset_index(drop=True), use_container_width=True)
 
-        # زرار التصدير كـ PDF
-        if st.button("📥 Export Journal to PDF", key="export_pdf"):
-            pdf_file = export_journal_to_pdf(df, user)
-            with open(pdf_file, "rb") as f:
-                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
-
         st.subheader("🗑️ Delete Trades:")
         for idx, row in df.iterrows():
-            summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-            if st.button(f"❌ Delete: {summary}", key=f"delete_{idx}"):
-                st.warning(f"Are you sure you want to delete this trade?\n{summary}")
-                if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_delete_{idx}"):
-                    delete_trade_from_gsheet(user, row["Entry Time"], row["Ticker Symbol"])
-                    st.success(f"✅ Deleted trade: {summary}")
-                    st.experimental_rerun()
-
+            summary = f"{row['Trade ID']} | {row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']}"
+            if st.button(f"❌ Delete Trade ID {row['Trade ID']}", key=f"del_{row['Trade ID']}"):
+                delete_trade_from_gsheet(user, row["Trade ID"])
+                st.success(f"✅ Deleted trade with ID: {row['Trade ID']}")
+                st.experimental_rerun()
 
 
 import io
