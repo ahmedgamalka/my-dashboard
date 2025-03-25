@@ -315,8 +315,24 @@ def trade_journal_page():
                 st.rerun()   # ✅ استخدم st.rerun() هنا خارج اللوب!
 
 import io
+import tempfile
 
 # دالة تصدير ملخص الداشبورد إلى PDF
+ChatGPT said:
+المشكلة هنا يا باشا إن pdf.image() في مكتبة fpdf ما بتقبلش BytesIO بشكل مباشر، ولازم يكون عندك مسار فعلي لملف صورة على الهارد ديسك.
+
+الحل:
+
+نحفظ الصورة المؤقتة على القرص باستخدام tempfile.NamedTemporaryFile
+
+وبعدين نحط المسار بتاع الصورة في pdf.image()
+
+✅ الكود المعدل لحل المشكلة:
+python
+Copy
+Edit
+import tempfile
+
 def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf = FPDF()
     pdf.add_page()
@@ -324,7 +340,7 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf.cell(200, 10, txt=f"Dashboard Summary Export for {user}", ln=True, align='C')
     pdf.ln(10)
 
-    # إضافة جدول بالنتائج
+    # جدول النتائج
     pdf.set_font("Arial", size=10)
     pdf.cell(80, 8, "Metric", border=1)
     pdf.cell(60, 8, "Value", border=1, ln=True)
@@ -337,24 +353,21 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
     fig = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
 
-    # تصدير باستخدام kaleido
-    img_buf = io.BytesIO()
-    fig.write_image(img_buf, format="png", engine="kaleido")
-    img_buf.seek(0)
-    pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+        fig.write_image(tmpfile.name, engine="kaleido")
+        pdf.image(tmpfile.name, x=10, y=pdf.get_y(), w=180)
     pdf.ln(10)
 
-    # Performance by Ticker Bar Chart
+    # Bar chart
     perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
     fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
 
-    img_buf = io.BytesIO()
-    fig_bar.write_image(img_buf, format="png", engine="kaleido")
-    img_buf.seek(0)
-    pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+        fig_bar.write_image(tmpfile.name, engine="kaleido")
+        pdf.image(tmpfile.name, x=10, y=pdf.get_y(), w=180)
     pdf.ln(10)
 
-    # Pie chart Win vs Loss Distribution
+    # Pie Chart
     win_count = len(filtered_df[filtered_df["Net P&L"] > 0])
     loss_count = len(filtered_df[filtered_df["Net P&L"] <= 0])
     fig_pie = px.pie(
@@ -363,15 +376,13 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
         title="Win vs Loss Distribution"
     )
 
-    img_buf = io.BytesIO()
-    fig_pie.write_image(img_buf, format="png", engine="kaleido")
-    img_buf.seek(0)
-    pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+        fig_pie.write_image(tmpfile.name, engine="kaleido")
+        pdf.image(tmpfile.name, x=10, y=pdf.get_y(), w=180)
 
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
-
 # صفحة الداشبورد
 def dashboard_page():
     st.header("📈 Trading Performance Dashboard")
