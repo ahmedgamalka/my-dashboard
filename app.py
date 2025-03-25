@@ -115,6 +115,8 @@ def risk_management_page():
         take_profit = entry + (risk_per_share * rr_ratio)
         potential_reward = (take_profit - entry) * pos_size
         risk_dollar = pos_size * risk_per_share
+        total_invested_amount = pos_size * entry
+
 
         if risk_dollar == 0:
             st.warning("⚠️ Risk amount calculated as zero.")
@@ -124,16 +126,29 @@ def risk_management_page():
         actual_rr = potential_reward / risk_dollar
         gain_pct = (potential_reward / (pos_size * entry)) * 100
 
-        df = pd.DataFrame({
-            "Metric": [
-                "Position Size (shares)", "Total Trading Fee ($)", "Risk Amount ($)", 
-                "Calculated Take Profit Price ($)", "Potential Reward ($)", "Actual R/R Ratio", "Expected Gain (%)"
-            ],
-            "Value": [
-                pos_size, f"${pos_size * commission * 2:.2f}", f"${risk_dollar:.2f}",
-                f"${take_profit:.2f}", f"${potential_reward:.2f}", f"{actual_rr:.2f}", f"{gain_pct:.2f}%"
-            ]
-        })
+    df = pd.DataFrame({
+        "Metric": [
+            "Position Size (shares)", 
+            "Total Trading Fee ($)", 
+            "Risk Amount ($)", 
+            "Calculated Take Profit Price ($)", 
+            "Potential Reward ($)", 
+            "Actual R/R Ratio", 
+            "Expected Gain (%)",
+            "Total Invested Amount ($)"   # 👉 ضيف السطر ده
+    ],
+    "Value": [
+        pos_size, 
+        f"${pos_size*commission*2:.2f}", 
+        f"${risk_dollar:.2f}", 
+        f"${take_profit:.2f}", 
+        f"${potential_reward:.2f}", 
+        f"{actual_rr:.2f}", 
+        f"{gain_pct:.2f}%", 
+        f"${total_invested_amount:.2f}"   # 👉 وضيف القيمة هنا
+    ]
+})
+
         st.dataframe(df.style.apply(highlight_rows, axis=1))
 
         if actual_rr < 1:
