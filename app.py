@@ -205,42 +205,21 @@ def export_journal_to_pdf(filtered_df, user):
     return pdf_file
 
 # صفحة Trade Journal
-def delete_trade_from_gsheet(user, row_to_delete):
+def delete_trade_from_gsheet(user, trade_row):
     client = connect_gsheet()
     sheet = client.open("Trading_Journal_Master").worksheet(user)
-
-    # جلب جميع البيانات
-    data = sheet.get_all_records()
-    df = pd.DataFrame(data)
-
-    # التأكد إن الأعمدة الرقمية محولة بشكل صحيح
-    df["Entry Price"] = pd.to_numeric(df["Entry Price"], errors="coerce")
-    df["Exit Price"] = pd.to_numeric(df["Exit Price"], errors="coerce")
-    df["Net P&L"] = pd.to_numeric(df["Net P&L"], errors="coerce")
-
-    # عمل شرط مطابق على أكثر من عمود
-    condition = (
-        (df["Ticker Symbol"] == row_to_delete["Ticker Symbol"]) &
-        (df["Entry Price"] == row_to_delete["Entry Price"]) &
-        (df["Exit Price"] == row_to_delete["Exit Price"]) &
-        (df["Entry Time"] == row_to_delete["Entry Time"]) &
-        (df["Net P&L"] == row_to_delete["Net P&L"])
-    )
-
-    # التأكد من وجوده
-    if not condition.any():
-        st.warning("⚠️ Trade not found. Might already be deleted.")
-        return
-
-    # حذف الصف
-    df_after_delete = df[~condition]
-
-    # مسح الورقة بالكامل
+    records = sheet.get_all_records()
+    df = pd.DataFrame(records)
+    # حدد الصف الذي يطابق الـ Entry Time و Ticker Symbol
+    updated_df = df[
+        ~((df["Entry Time"] == trade_row["Entry Time"]) & (df["Ticker Symbol"] == trade_row["Ticker Symbol"]))
+    ]
+    # امسح الشيت وأعد كتابة البيانات
     sheet.clear()
-    # إعادة رفع الأعمدة
-    sheet.append_row(list(df.columns))
-    for _, record in df_after_delete.iterrows():
-        sheet.append_row(record.astype(str).tolist())  # كله كنص لتجنب مشاكل فورمات
+    sheet.append_row(list(updated_df.columns))
+    for _, row in updated_df.iterrows():
+        sheet.append_row(row.tolist())
+
 
     st.success("✅ Trade successfully deleted.")
 
@@ -263,42 +242,33 @@ def trade_journal_page():
             st.warning("⚠️ No trades recorded yet.")
             return
 
-        # فلاتر البحث
-        ticker_filter = st.text_input("Filter by Ticker Symbol (optional)")
-        start_date = st.date_input("From Date", value=datetime(2023, 1, 1))
-        end_date = st.date_input("To Date", value=datetime.now())
-        end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+        st.subheader("📊 All Trades")
+        st.dataframe(df, use_container_width=True)
 
-        df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
-        filtered_df = df[
-            (df["Entry Time"] >= pd.to_datetime(start_date)) &
-            (df["Entry Time"] <= end_date_dt)
-        ]
+        st.subheader("📋 Manage & Delete Trades:")
+        for idx, row in df.iterrows():
+            trade_card = f"""
+            <div style="border: 1px solid #444; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; background-color: #1c1c1c;">
+                <div>
+                    <strong>{row['Ticker Symbol']}</strong> | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}
+                </div>
+                <div>
+                    <form action="" method="post">
+                        <button style="background-color:red; color:white; border:none; padding: 5px 10px; border-radius: 5px; cursor:pointer;" name="delete" type="submit" formaction="#">❌ Delete</button>
+                    </form>
+                </div>
+            </div>
+            """
+            st.markdown(trade_card, unsafe_allow_html=True)
+            if st.button(f"Confirm Delete: {row['Ticker Symbol']} @ {row['Entry Price']}", key=f"del_{idx}"):
+                delete_trade_from_gsheet(user, row)
+                st.experimental_rerun()
 
-        if ticker_filter:
-            filtered_df = filtered_df[filtered_df["Ticker Symbol"].str.contains(ticker_filter, case=False)]
-
-        if filtered_df.empty:
-            st.warning("⚠️ No trades found for the selected filters.")
-            return
-
-        st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
-
-        # زرار التصدير كـ PDF
+        # Export as PDF
         if st.button("📥 Export Journal to PDF"):
-            pdf_file = export_journal_to_pdf(filtered_df, user)
+            pdf_file = export_journal_to_pdf(df, user)
             with open(pdf_file, "rb") as f:
                 st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
-
-        # زر الحذف
-    st.subheader("🗑️ Delete Trades:")
-    for idx, row in df.iterrows():
-        summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-        if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
-            delete_trade_from_gsheet(user, row)
-            st.experimental_rerun()
-
-
 
 
 import io
