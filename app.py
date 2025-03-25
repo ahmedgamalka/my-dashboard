@@ -8,7 +8,7 @@ from hashlib import sha256
 from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import io
+import tempfile
 
 st.set_page_config(
     page_title="Trading Journal",
@@ -23,7 +23,7 @@ def connect_gsheet():
     client = gspread.authorize(creds)
     return client
 
-# تفعيل الوضع الداكن
+# الوضع الداكن
 def set_dark_theme():
     st.markdown("""
         <style>
@@ -32,22 +32,19 @@ def set_dark_theme():
         </style>
     """, unsafe_allow_html=True)
 
-# تشفير كلمة السر
+# تشفير كلمة المرور
 def hash_password(password):
     return sha256(password.encode()).hexdigest()
 
 def verify_password(password, hashed):
     return hash_password(password) == hashed
 
-
-
-# شاشة تسجيل الدخول وإنشاء الحساب باستخدام Google Sheets
+# صفحة تسجيل الدخول وإنشاء حساب
 def login_signup():
     st.title("🔐 Login or Sign Up")
     menu = st.radio("Select:", ["Login", "Sign Up"])
     client = connect_gsheet()
-    
-    # تجهيز ورقة العمل لحفظ بيانات المستخدمين
+
     try:
         sheet = client.open("Trading_Users_DB").worksheet("Users")
     except gspread.exceptions.WorksheetNotFound:
@@ -60,7 +57,7 @@ def login_signup():
         if st.button("Create Account"):
             users_data = sheet.get_all_records()
             existing_users = [user["username"] for user in users_data]
-            
+
             if new_user in existing_users:
                 st.warning("Username already exists!")
             else:
@@ -74,7 +71,7 @@ def login_signup():
         if st.button("Login"):
             users_data = sheet.get_all_records()
             user_entry = next((u for u in users_data if u["username"] == username), None)
-            
+
             if user_entry:
                 hashed_pw = hash_password(password)
                 if user_entry["password_hash"] == hashed_pw:
@@ -86,7 +83,7 @@ def login_signup():
                 st.warning("Username does not exist.")
 
 
-# تمييز صفوف معينة في الجداول
+# تمييز الصفوف المهمة
 def highlight_rows(row):
     highlight = "background-color: yellow; color: black"
     if row["Metric"] in ["Position Size (shares)", "Calculated Take Profit Price ($)"]:
@@ -121,7 +118,7 @@ def risk_management_page():
 
         if risk_dollar == 0:
             st.warning("⚠️ Risk amount calculated as zero.")
-            st.info("💡 Tip: Adjust your stop loss or entry price.")
+            st.info("💡 Tip: Adjust stop loss or entry price.")
             return
 
         actual_rr = potential_reward / risk_dollar
@@ -133,22 +130,21 @@ def risk_management_page():
                 "Calculated Take Profit Price ($)", "Potential Reward ($)", "Actual R/R Ratio", "Expected Gain (%)"
             ],
             "Value": [
-                pos_size, f"${pos_size*commission*2:.2f}", f"${risk_dollar:.2f}", 
+                pos_size, f"${pos_size * commission * 2:.2f}", f"${risk_dollar:.2f}",
                 f"${take_profit:.2f}", f"${potential_reward:.2f}", f"{actual_rr:.2f}", f"{gain_pct:.2f}%"
             ]
         })
-
         st.dataframe(df.style.apply(highlight_rows, axis=1))
 
         if actual_rr < 1:
             st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, which is below 1.0.")
             st.info("💡 Tip: Consider improving your stop loss or target.")
 
-# إضافة صفقة جديدة إلى Google Sheets
+# صفحة إضافة صفقة جديدة
 def add_trade_page():
     st.header("➕ Add Trade")
     client = connect_gsheet()
-    
+
     if "username" in st.session_state:
         user = st.session_state["username"]
         try:
@@ -160,7 +156,7 @@ def add_trade_page():
                 "Position Size", "Risk", "Trade SL", "Target", "R Multiple", "Commission", "Net P&L",
                 "Used Indicator", "Used Strategy", "Notes"
             ])
-        
+
         ticker = st.text_input("Ticker Symbol")
         entry = st.number_input("Entry Price", step=0.1)
         exit_price = st.number_input("Exit Price", step=0.1)
@@ -190,9 +186,8 @@ def add_trade_page():
 
 
 from fpdf import FPDF
-import io
 
-# تصدير بيانات الجورنال إلى PDF
+# دالة تصدير الجورنال إلى PDF
 def export_journal_to_pdf(filtered_df, user):
     pdf = FPDF()
     pdf.add_page()
@@ -209,7 +204,7 @@ def export_journal_to_pdf(filtered_df, user):
     pdf.output(pdf_file)
     return pdf_file
 
-# صفحة الجورنال: عرض، تصدير، حذف
+# صفحة Trade Journal
 def trade_journal_page():
     st.header("📁 Trade Journal")
     client = connect_gsheet()
@@ -227,35 +222,34 @@ def trade_journal_page():
             st.warning("⚠️ No trades recorded yet.")
             return
 
+        # فلاتر البحث
         ticker_filter = st.text_input("Filter by Ticker Symbol (optional)")
-        date_filter_start = st.date_input("From Date", value=datetime(2023, 1, 1))
-        date_filter_end = st.date_input("To Date", value=datetime.now())
-        date_filter_end_datetime = pd.to_datetime(date_filter_end) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+        start_date = st.date_input("From Date", value=datetime(2023, 1, 1))
+        end_date = st.date_input("To Date", value=datetime.now())
+        end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
 
         df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
+        filtered_df = df[
+            (df["Entry Time"] >= pd.to_datetime(start_date)) &
+            (df["Entry Time"] <= end_date_dt)
+        ]
 
-        filtered_df = df.copy()
         if ticker_filter:
             filtered_df = filtered_df[filtered_df["Ticker Symbol"].str.contains(ticker_filter, case=False)]
 
-        filtered_df = filtered_df[
-            (filtered_df["Entry Time"] >= pd.to_datetime(date_filter_start)) &
-            (filtered_df["Entry Time"] <= date_filter_end_datetime)
-        ]
-
         if filtered_df.empty:
-            st.warning("⚠️ No trades found for the selected period.")
+            st.warning("⚠️ No trades found for the selected filters.")
             return
 
         st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
 
-        # تصدير الجورنال إلى PDF
+        # زرار التصدير كـ PDF
         if st.button("📥 Export Journal to PDF"):
             pdf_file = export_journal_to_pdf(filtered_df, user)
             with open(pdf_file, "rb") as f:
                 st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
-        # حذف الصفقات
+        # زر الحذف
         st.subheader("🗑️ Delete Trades:")
         for idx, row in filtered_df.iterrows():
             summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
@@ -267,7 +261,6 @@ def trade_journal_page():
                     df_new = df_all[
                         ~((df_all["Entry Time"] == row["Entry Time"]) & (df_all["Ticker Symbol"] == row["Ticker Symbol"]))
                     ]
-                    # إعادة كتابة الشيت
                     sheet.clear()
                     sheet.append_row(list(df_new.columns))
                     for i, record in df_new.iterrows():
@@ -278,7 +271,7 @@ def trade_journal_page():
 
 import io
 
-# تصدير ملخص الداشبورد إلى PDF
+# دالة تصدير ملخص الداشبورد إلى PDF
 def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf = FPDF()
     pdf.add_page()
@@ -289,7 +282,7 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     for key, value in summary.items():
         pdf.cell(0, 10, f"{key}: {value}", ln=True)
 
-    # رسم Equity Curve
+    # رسم الـ Equity Curve
     filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
     fig, ax = plt.subplots()
     ax.plot(filtered_df['Entry Time'], filtered_df["Cumulative PnL"], marker='o')
@@ -302,7 +295,11 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     plt.close(fig)
     img_buf.seek(0)
 
-    pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
+    # حفظ الصورة مؤقتًا
+    with open("equity_curve.png", "wb") as f:
+        f.write(img_buf.read())
+    pdf.image("equity_curve.png", x=10, y=pdf.get_y(), w=180)
+    
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
@@ -327,115 +324,135 @@ def dashboard_page():
 
         df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
         df["Net P&L"] = pd.to_numeric(df["Net P&L"], errors="coerce")
+        df = df.dropna(subset=["Entry Time"])
 
-        st.subheader("📅 Filter by Date Range")
-        start_date = st.date_input("Start Date", value=datetime(2023, 1, 1))
-        end_date = st.date_input("End Date", value=datetime.now())
-        end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+    # فلتر التاريخ
+    st.subheader("📅 Filter by Date Range")
+    start_date = st.date_input("Start Date", value=datetime(2023, 1, 1))
+    end_date = st.date_input("End Date", value=datetime.now())
+    end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
 
-        filtered = df[
-            (df["Entry Time"] >= pd.to_datetime(start_date)) &
-            (df["Entry Time"] <= end_date_dt)
-        ]
+    filtered = df[
+        (df["Entry Time"] >= pd.to_datetime(start_date)) &
+        (df["Entry Time"] <= end_date_dt)
+    ]
 
-        if filtered.empty:
-            st.warning("⚠️ No trades found for the selected period.")
-            return
+    if filtered.empty:
+        st.warning("⚠️ No trades found for the selected period.")
+        return
 
-        filtered["R Multiple"] = pd.to_numeric(filtered["R Multiple"], errors="coerce")
+    # حساب الإحصائيات
+    total_trades = len(filtered)
+    winning_trades = filtered[filtered["Net P&L"] > 0]
+    losing_trades = filtered[filtered["Net P&L"] <= 0]
+    win_rate = (len(winning_trades) / total_trades) * 100 if total_trades > 0 else 0
+    avg_win = winning_trades["Net P&L"].mean() if not winning_trades.empty else 0
+    avg_loss = losing_trades["Net P&L"].mean() if not losing_trades.empty else 0
+    total_pnl = filtered["Net P&L"].sum()
+    avg_r = filtered["R Multiple"].mean()
+    max_gain = filtered["Net P&L"].max()
+    max_loss = filtered["Net P&L"].min()
 
-        total_trades = len(filtered)
-        winning_trades = filtered[filtered["Net P&L"] > 0]
-        losing_trades = filtered[filtered["Net P&L"] <= 0]
-        win_rate = (len(winning_trades) / total_trades) * 100 if total_trades > 0 else 0
-        avg_win = winning_trades["Net P&L"].mean() if not winning_trades.empty else 0
-        avg_loss = losing_trades["Net P&L"].mean() if not losing_trades.empty else 0
-        total_pnl = filtered["Net P&L"].sum()
-        avg_r = filtered["R Multiple"].mean()
-        max_gain = filtered["Net P&L"].max()
-        max_loss = filtered["Net P&L"].min()
+    # عرض المقاييس
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Trades", total_trades)
+        st.metric("Win Rate %", f"{win_rate:.2f}%")
+    with col2:
+        st.metric("Total Net P&L", f"${total_pnl:.2f}")
+        st.metric("Average R Multiple", f"{avg_r:.2f}")
+    with col3:
+        st.metric("Max Gain", f"${max_gain:.2f}")
+        st.metric("Max Loss", f"${max_loss:.2f}")
 
-        # عرض المقاييس
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Trades", total_trades)
-            st.metric("Win Rate %", f"{win_rate:.2f}%")
-        with col2:
-            st.metric("Total Net P&L", f"${total_pnl:.2f}")
-            st.metric("Average R Multiple", f"{avg_r:.2f}")
-        with col3:
-            st.metric("Max Gain", f"${max_gain:.2f}")
-            st.metric("Max Loss", f"${max_loss:.2f}")
+    # رسم منحنى الربح التراكمي
+    st.subheader("📈 Equity Curve")
+    filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
+    fig = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    st.plotly_chart(fig)
 
-        # رسم Equity Curve
-        st.subheader("📈 Equity Curve")
-        filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
-        fig = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
-        st.plotly_chart(fig)
+    # أداء الأسهم حسب Ticker
+    st.subheader("🏷️ Performance by Ticker Symbol")
+    perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
+    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
+    st.plotly_chart(fig_bar)
 
-        # أداء حسب الأسهم
-        st.subheader("🏷️ Performance by Ticker Symbol")
-        perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
-        fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
-        st.plotly_chart(fig_bar)
+    # ملخص للـ PDF
+    summary = {
+        "Total Trades": total_trades,
+        "Win Rate %": f"{win_rate:.2f}%",
+        "Total Net P&L": f"${total_pnl:.2f}",
+        "Average Win": f"${avg_win:.2f}",
+        "Average Loss": f"${avg_loss:.2f}",
+        "Average R Multiple": f"{avg_r:.2f}",
+        "Max Gain": f"${max_gain:.2f}",
+        "Max Loss": f"${max_loss:.2f}"
+    }
 
-        summary = {
-            "Total Trades": total_trades,
-            "Win Rate %": f"{win_rate:.2f}%",
-            "Total Net P&L": f"${total_pnl:.2f}",
-            "Average Win": f"${avg_win:.2f}",
-            "Average Loss": f"${avg_loss:.2f}",
-            "Average R Multiple": f"{avg_r:.2f}",
-            "Max Gain": f"${max_gain:.2f}",
-            "Max Loss": f"${max_loss:.2f}"
-        }
+    # زر تصدير الداشبورد كـ PDF
+    if st.button("📥 Export Dashboard Summary to PDF"):
+        pdf_file = export_dashboard_summary_to_pdf(summary, user, filtered)
+        with open(pdf_file, "rb") as f:
+            st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
-        # تصدير الداشبورد PDF
-        if st.button("📥 Export Dashboard Summary to PDF"):
-            pdf_file = export_dashboard_summary_to_pdf(summary, user, filtered)
-            with open(pdf_file, "rb") as f:
-                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
-# صفحة الوثائق (Documentation)
+# صفحة التوثيق
 def documentation_page():
     st.header("📚 Documentation — User Guide")
 
     st.subheader("1️⃣ Risk Management Page")
     st.write("""
-    - Define your trading capital, commissions, entry/stop, and target.
-    - Calculate position size, risk-reward ratio, and gain expectations.
+    - **Account Balance**: Your total trading capital.
+    - **Commission per Share**: The broker's fee per share.
+    - **Risk % per Trade**: How much of your capital you're willing to risk in one trade (recommended: 1%–2%).
+    - **Entry Price / Stop Loss**: Define entry and exit conditions.
+    - **R/R Ratio**: Desired Reward-to-Risk ratio.
+    - After calculation, you'll see position size, potential reward, risk amount, and smart tips.
     """)
 
     st.subheader("2️⃣ Add Trade Page")
     st.write("""
-    - Log every trade with entry/exit prices, size, stop loss, and strategy used.
+    - Add every trade with its details: entry, exit, size, stop loss, target price.
+    - You can also note down the indicator and strategy you used.
+    - The trade gets stored automatically in your personal journal file.
     """)
 
     st.subheader("3️⃣ Trade Journal Page")
     st.write("""
-    - View, filter, and delete trades.
-    - Export your journal as a PDF for your records.
+    - View and filter all your saved trades by ticker and date range.
+    - Export your trades as a PDF.
+    - Delete unwanted trades with confirmation prompts.
     """)
 
     st.subheader("4️⃣ Dashboard Page")
     st.write("""
-    - See performance metrics, equity curve, and breakdown by ticker.
-    - Export a PDF summary including charts and stats.
+    - See key trading stats: Win Rate, Average R, Max Gain/Loss.
+    - Visual equity curve to track cumulative performance.
+    - Performance by ticker symbols.
+    - Export a full dashboard summary (with charts) as a PDF.
     """)
 
-    st.subheader("💡 Pro Trading Tips")
+    st.subheader("💡 Key Definitions")
     st.markdown("""
-    - Never risk more than 2% of your capital per trade.
-    - Follow your plan and avoid emotional decisions.
-    - Review and learn from your journal regularly.
+    - **Position Size**: Number of shares you can trade without exceeding your max risk.
+    - **R/R Ratio**: Reward-to-Risk ratio — aim for at least 2:1.
+    - **Net P&L**: Profit or Loss after fees.
+    - **R Multiple**: Profit/Loss relative to initial risk — >1 is good, <1 means loss or small gain.
+    - **Equity Curve**: Visual graph of your cumulative trading results.
     """)
 
-    st.success("All the tools you need to become a disciplined trader! 🚀")
+    st.subheader("💡 Pro Tips for Traders")
+    st.markdown("""
+    - Never risk more than 2% of your capital on a single trade.
+    - Stick to your plan and avoid revenge trading.
+    - Review your journal regularly to learn from mistakes.
+    - Trade with discipline — not emotions.
+    """)
+
+    st.success("This guide will always be here to help you master your trading dashboard! 🚀")
 
 
-
-
-# التطبيق الأساسي
+# التطبيق الأساسي main
 def main():
     set_dark_theme()
     if "username" not in st.session_state:
@@ -468,11 +485,13 @@ def main():
             unsafe_allow_html=True
         )
 
+        # زرار اللوج أوت
         if st.sidebar.button("🚪 Logout", key="logout"):
             if "username" in st.session_state:
                 del st.session_state["username"]
-                st.stop()
+                st.experimental_rerun()
 
+        # الانتقال بين الصفحات
         if page == "Risk Management":
             risk_management_page()
         elif page == "Add Trade":
@@ -487,3 +506,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
