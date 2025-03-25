@@ -331,7 +331,8 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
         pdf.set_font("Arial", 'B', 9)
         pdf.cell(60, 8, key + ":", border=1)
         pdf.set_font("Arial", '', 9)
-        pdf.cell(60, 8, value, border=1, ln=True)
+        pdf.cell(60, 8, str(value), border=1, ln=True)
+
 
     pdf.ln(10)
 
