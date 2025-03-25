@@ -151,7 +151,7 @@ def risk_management_page():
 
     st.dataframe(df.style.apply(highlight_rows, axis=1))
 
-        if actual_rr < 1:
+     if actual_rr < 1:
             st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, which is below 1.0.")
             st.info("💡 Tip: Consider improving your stop loss or target.")
 
