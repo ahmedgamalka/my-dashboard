@@ -126,7 +126,7 @@ def risk_management_page():
         actual_rr = potential_reward / risk_dollar
         gain_pct = (potential_reward / (pos_size * entry)) * 100
 
-df = pd.DataFrame({
+    df = pd.DataFrame({
         "Metric": [
             "Position Size (shares)", 
             "Total Trading Fee ($)", 
