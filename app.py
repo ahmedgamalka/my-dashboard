@@ -324,46 +324,44 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf.cell(200, 10, txt=f"Dashboard Summary Export for {user}", ln=True, align='C')
     pdf.ln(10)
 
-    # جدول النتائج
+    # ➡️ جدول الملخص
     pdf.set_font("Arial", size=10)
-    pdf.cell(80, 8, "Metric", border=1)
-    pdf.cell(60, 8, "Value", border=1, ln=True)
     for key, value in summary.items():
-        pdf.cell(80, 8, str(key), border=1)
+        pdf.cell(60, 8, key, border=1)
         pdf.cell(60, 8, str(value), border=1, ln=True)
-    pdf.ln(10)
+    pdf.ln(5)
 
-    # رسم Equity Curve
+    # ➡️ رسم Equity Curve
     filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
-    fig = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    fig_equity = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    equity_img = "equity_curve.png"
+    fig_equity.write_image(equity_img)
+    pdf.image(equity_img, x=10, y=pdf.get_y(), w=180)
+    pdf.ln(85)
 
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-        fig.write_image(tmpfile.name, engine="kaleido")
-        pdf.image(tmpfile.name, x=10, y=pdf.get_y(), w=180)
-    pdf.ln(10)
-
-    # Bar chart
+    # ➡️ رسم Bar Chart (الأداء حسب Ticker)
     perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
     fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
+    bar_img = "bar_chart.png"
+    fig_bar.write_image(bar_img)
+    pdf.image(bar_img, x=10, y=pdf.get_y(), w=180)
+    pdf.ln(85)
 
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-        fig_bar.write_image(tmpfile.name, engine="kaleido")
-        pdf.image(tmpfile.name, x=10, y=pdf.get_y(), w=180)
-    pdf.ln(10)
-
-    # Pie Chart
-    win_count = len(filtered_df[filtered_df["Net P&L"] > 0])
-    loss_count = len(filtered_df[filtered_df["Net P&L"] <= 0])
+    # ➡️ Pie Chart: توزيع الأرباح والخسائر
+    wins_count = len(filtered_df[filtered_df["Net P&L"] > 0])
+    losses_count = len(filtered_df[filtered_df["Net P&L"] <= 0])
     fig_pie = px.pie(
-        names=["Wins", "Losses"],
-        values=[win_count, loss_count],
-        title="Win vs Loss Distribution"
+        names=["Wins", "Losses"], 
+        values=[wins_count, losses_count],
+        title="Win vs Loss Distribution",
+        color_discrete_sequence=["green", "red"]  # ✅ ألوان واضحة
     )
+    pie_img = "pie_chart.png"
+    fig_pie.write_image(pie_img)
+    pdf.ln(5)
+    pdf.image(pie_img, x=10, y=pdf.get_y(), w=180)
 
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-        fig_pie.write_image(tmpfile.name, engine="kaleido")
-        pdf.image(tmpfile.name, x=10, y=pdf.get_y(), w=180)
-
+    # ➡️ حفظ الملف
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
