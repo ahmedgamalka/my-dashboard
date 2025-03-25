@@ -186,7 +186,20 @@ def add_trade_page():
 
 
 from fpdf import FPDF
+import streamlit as st
+import pandas as pd
 
+# دالة حذف الصفقة من Google Sheets
+def delete_trade_from_gsheet(user, entry_time, ticker):
+    client = connect_gsheet()
+    sheet = client.open("Trading_Journal_Master").worksheet(user)
+    records = sheet.get_all_records()
+    for idx, record in enumerate(records, start=2):  # الصف الأول هو العنوان
+        if record["Entry Time"] == entry_time and record["Ticker Symbol"] == ticker:
+            sheet.delete_rows(idx)
+            break
+
+# دالة تصدير الجورنال كـ PDF
 def export_journal_to_pdf(filtered_df, user):
     pdf = FPDF()
     pdf.add_page()
@@ -203,6 +216,7 @@ def export_journal_to_pdf(filtered_df, user):
     pdf.output(pdf_file)
     return pdf_file
 
+# صفحة الجورنال
 def trade_journal_page():
     st.header("📁 Trade Journal")
     client = connect_gsheet()
@@ -223,35 +237,21 @@ def trade_journal_page():
         st.dataframe(df.reset_index(drop=True), use_container_width=True)
 
         # زرار التصدير كـ PDF
-        if st.button("📥 Export Journal to PDF", key="export_pdf_button"):
+        if st.button("📥 Export Journal to PDF", key="export_pdf"):
             pdf_file = export_journal_to_pdf(df, user)
             with open(pdf_file, "rb") as f:
-                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf", key="download_pdf")
+                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
         st.subheader("🗑️ Delete Trades:")
         for idx, row in df.iterrows():
             summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-            if st.button(f"❌ Delete: {summary}", key=f"delete_button_{idx}"):
+            if st.button(f"❌ Delete: {summary}", key=f"delete_{idx}"):
                 st.warning(f"Are you sure you want to delete this trade?\n{summary}")
                 if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_delete_{idx}"):
-                    all_data = sheet.get_all_records()
-                    df_all = pd.DataFrame(all_data)
-                    df_new = df_all[
-                        ~((df_all["Entry Time"] == row["Entry Time"]) & (df_all["Ticker Symbol"] == row["Ticker Symbol"]))
-                    ]
-                    sheet.clear()
-                    sheet.append_row(list(df_new.columns))
-                    for _, record in df_new.iterrows():
-                        sheet.append_row(record.tolist())
+                    delete_trade_from_gsheet(user, row["Entry Time"], row["Ticker Symbol"])
                     st.success(f"✅ Deleted trade: {summary}")
                     st.experimental_rerun()
 
-            
-        # Export as PDF
-        if st.button("📥 Export Journal to PDF"):
-            pdf_file = export_journal_to_pdf(df, user)
-            with open(pdf_file, "rb") as f:
-                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
 
 import io
