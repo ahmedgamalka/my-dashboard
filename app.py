@@ -233,14 +233,32 @@ def delete_trade_from_gsheet(user, trade_id):
 def export_journal_to_pdf(filtered_df, user):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=10)
+    pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt=f"Trading Journal Export for {user}", ln=True, align='C')
     pdf.ln(10)
 
+    # رأس الجدول
+    pdf.set_font("Arial", 'B', 10)
+    headers = ["Entry Time", "Ticker", "Entry Price", "Exit Price", "Net P&L", "R Multiple"]
+    col_widths = [40, 30, 25, 25, 25, 25]
+    for i, header in enumerate(headers):
+        pdf.cell(col_widths[i], 10, header, border=1, align='C')
+    pdf.ln(10)
+
+    # بيانات الجدول
+    pdf.set_font("Arial", '', 9)
     for index, row in filtered_df.iterrows():
-        line = f"{row['Entry Time']} | {row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-        pdf.multi_cell(0, 8, line)
-        pdf.ln(2)
+        row_values = [
+            str(row["Entry Time"])[:19],
+            row["Ticker Symbol"],
+            f"{row['Entry Price']:.2f}",
+            f"{row['Exit Price']:.2f}",
+            f"{row['Net P&L']:.2f}",
+            f"{row['R Multiple']:.2f}"
+        ]
+        for i, val in enumerate(row_values):
+            pdf.cell(col_widths[i], 8, val, border=1, align='C')
+        pdf.ln(8)
 
     pdf_file = f"trading_journal_{user}.pdf"
     pdf.output(pdf_file)
@@ -302,31 +320,52 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Dashboard Summary Export for {user}", ln=True, align='C')
+    pdf.cell(200, 10, txt=f"Dashboard Report for {user}", ln=True, align='C')
     pdf.ln(10)
 
+    # جدول الإحصائيات
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(0, 10, "Performance Summary:", ln=True)
+    pdf.ln(5)
     for key, value in summary.items():
-        pdf.cell(0, 10, f"{key}: {value}", ln=True)
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(60, 8, key + ":", border=1)
+        pdf.set_font("Arial", '', 9)
+        pdf.cell(60, 8, value, border=1, ln=True)
 
-    # رسم الـ Equity Curve
+    pdf.ln(10)
+
+    # الرسم البياني: Equity Curve
     filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(6, 3))
     ax.plot(filtered_df['Entry Time'], filtered_df["Cumulative PnL"], marker='o')
-    ax.set_title("Cumulative Net P&L Over Time")
+    ax.set_title("Cumulative Net P&L")
     ax.set_xlabel("Date")
-    ax.set_ylabel("Cumulative PnL")
-
-    img_buf = io.BytesIO()
-    plt.savefig(img_buf, format="png")
+    ax.set_ylabel("PnL")
+    equity_img = "equity_curve.png"
+    fig.savefig(equity_img)
     plt.close(fig)
-    img_buf.seek(0)
+    pdf.image(equity_img, x=10, y=pdf.get_y(), w=180)
+    pdf.ln(70)
 
-    # حفظ الصورة مؤقتًا
-    with open("equity_curve.png", "wb") as f:
-        f.write(img_buf.read())
-    pdf.image("equity_curve.png", x=10, y=pdf.get_y(), w=180)
-    
-    pdf_file = f"dashboard_summary_{user}.pdf"
+    # الرسم البياني: Performance by Ticker
+    perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index()
+    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
+    bar_img = "bar_chart.png"
+    fig_bar.write_image(bar_img)
+    pdf.image(bar_img, x=10, y=pdf.get_y(), w=180)
+    pdf.ln(80)
+
+    # الرسم البياني: Win/Loss Pie Chart
+    win_count = len(filtered_df[filtered_df["Net P&L"] > 0])
+    loss_count = len(filtered_df[filtered_df["Net P&L"] <= 0])
+    pie_data = pd.DataFrame({"Result": ["Wins", "Losses"], "Count": [win_count, loss_count]})
+    fig_pie = px.pie(pie_data, names="Result", values="Count", title="Win vs Loss Distribution")
+    pie_img = "pie_chart.png"
+    fig_pie.write_image(pie_img)
+    pdf.image(pie_img, x=10, y=pdf.get_y(), w=180)
+
+    pdf_file = f"dashboard_full_report_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
 
