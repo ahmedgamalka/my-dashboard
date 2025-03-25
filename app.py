@@ -9,6 +9,7 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import tempfile
+import plotly.io as pio
 
 st.set_page_config(
     page_title="Trading Journal",
@@ -320,53 +321,36 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Dashboard Report for {user}", ln=True, align='C')
+    pdf.cell(200, 10, txt=f"Dashboard Summary Export for {user}", ln=True, align='C')
     pdf.ln(10)
 
-    # جدول الإحصائيات
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(0, 10, "Performance Summary:", ln=True)
-    pdf.ln(5)
+    # إضافة ملخص النتائج في جدول
+    pdf.set_font("Arial", size=10)
+    pdf.cell(60, 8, "Metric", border=1)
+    pdf.cell(60, 8, "Value", border=1, ln=True)
     for key, value in summary.items():
-        pdf.set_font("Arial", 'B', 9)
-        pdf.cell(60, 8, key + ":", border=1)
-        pdf.set_font("Arial", '', 9)
+        pdf.cell(60, 8, key, border=1)
         pdf.cell(60, 8, str(value), border=1, ln=True)
 
-
-    pdf.ln(10)
-
-    # الرسم البياني: Equity Curve
+    # Equity curve
     filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
-    fig, ax = plt.subplots(figsize=(6, 3))
-    ax.plot(filtered_df['Entry Time'], filtered_df["Cumulative PnL"], marker='o')
-    ax.set_title("Cumulative Net P&L")
-    ax.set_xlabel("Date")
-    ax.set_ylabel("PnL")
-    equity_img = "equity_curve.png"
-    fig.savefig(equity_img)
-    plt.close(fig)
-    pdf.image(equity_img, x=10, y=pdf.get_y(), w=180)
-    pdf.ln(70)
+    fig_eq = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Equity Curve")
 
-    # الرسم البياني: Performance by Ticker
-    perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index()
-    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
-    bar_img = "bar_chart.png"
-    fig_bar.write_image(bar_img)
-    pdf.image(bar_img, x=10, y=pdf.get_y(), w=180)
-    pdf.ln(80)
+    eq_img = f"equity_curve_{user}.png"
+    fig_eq.write_image(eq_img, engine="kaleido")
+    pdf.ln(10)
+    pdf.image(eq_img, x=10, w=180)
 
-    # الرسم البياني: Win/Loss Pie Chart
-    win_count = len(filtered_df[filtered_df["Net P&L"] > 0])
-    loss_count = len(filtered_df[filtered_df["Net P&L"] <= 0])
-    pie_data = pd.DataFrame({"Result": ["Wins", "Losses"], "Count": [win_count, loss_count]})
-    fig_pie = px.pie(pie_data, names="Result", values="Count", title="Win vs Loss Distribution")
-    pie_img = "pie_chart.png"
-    fig_pie.write_image(pie_img)
-    pdf.image(pie_img, x=10, y=pdf.get_y(), w=180)
+    # Bar chart of performance by ticker
+    perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
+    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Performance by Ticker Symbol")
 
-    pdf_file = f"dashboard_full_report_{user}.pdf"
+    bar_img = f"bar_chart_{user}.png"
+    fig_bar.write_image(bar_img, engine="kaleido")
+    pdf.ln(10)
+    pdf.image(bar_img, x=10, w=180)
+
+    pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
 
