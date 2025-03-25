@@ -205,23 +205,35 @@ def export_journal_to_pdf(filtered_df, user):
     return pdf_file
 
 # صفحة Trade Journal
-def delete_trade_from_gsheet(user, row):
+def delete_trade_from_gsheet(user, row_to_delete):
     client = connect_gsheet()
     sheet = client.open("Trading_Journal_Master").worksheet(user)
-    all_data = sheet.get_all_records()
-    df_all = pd.DataFrame(all_data)
-
-    # حذف الصف عن طريق المطابقة الدقيقة
-    mask = (df_all["Ticker Symbol"] == row["Ticker Symbol"]) & \
-           (df_all["Entry Time"] == row["Entry Time"]) & \
-           (df_all["Entry Price"] == row["Entry Price"])
-
-    df_new = df_all[~mask]
-
-    # إعادة رفع الداتا بدون الصف المحذوف
+    
+    # جلب جميع البيانات في DataFrame
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    
+    # عمل قناع للصف اللي هيتحذف
+    condition = (
+        (df['Ticker Symbol'] == row_to_delete['Ticker Symbol']) &
+        (df['Entry Time'] == row_to_delete['Entry Time']) &
+        (df['Entry Price'] == row_to_delete['Entry Price']) &
+        (df['Exit Price'] == row_to_delete['Exit Price']) &
+        (df['Net P&L'] == row_to_delete['Net P&L'])
+    )
+    
+    # التأكد إنه موجود
+    if not condition.any():
+        st.warning("⚠️ Trade not found. It might have been already deleted.")
+        return
+    
+    # حذف الصف
+    df_after_delete = df[~condition]
+    
+    # إعادة رفع البيانات
     sheet.clear()
-    sheet.append_row(list(df_new.columns))
-    for _, record in df_new.iterrows():
+    sheet.append_row(list(df.columns))  # رفع ال headers
+    for _, record in df_after_delete.iterrows():
         sheet.append_row(record.tolist())
 
 
@@ -274,10 +286,12 @@ def trade_journal_page():
     for idx, row in df.iterrows():
         summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
         if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
+        # بعد الضغط على delete نعرض confirm فقط
             if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
                 delete_trade_from_gsheet(user, row)
-                st.success(f"✅ Deleted trade: {summary}")
-                st.rerun()
+                st.success(f"✅ Trade deleted: {summary}")
+                st.experimental_rerun()
+
 
 
 import io
