@@ -250,23 +250,16 @@ def trade_journal_page():
                 st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
         # زر الحذف
-        st.subheader("🗑️ Delete Trades:")
-        for idx, row in filtered_df.iterrows():
-            summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-            if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
-                st.warning(f"Are you sure you want to delete this trade?\n{summary}")
-                if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
-                    all_data = sheet.get_all_records()
-                    df_all = pd.DataFrame(all_data)
-                    df_new = df_all[
-                        ~((df_all["Entry Time"] == row["Entry Time"]) & (df_all["Ticker Symbol"] == row["Ticker Symbol"]))
-                    ]
-                    sheet.clear()
-                    sheet.append_row(list(df_new.columns))
-                    for i, record in df_new.iterrows():
-                        sheet.append_row(record.tolist())
-                    st.success(f"✅ Deleted trade: {summary}")
-                    st.experimental_rerun()
+   st.subheader("🗑️ Delete Trades:")
+for idx, row in df.iterrows():
+    summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
+    if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
+        st.warning(f"Are you sure you want to delete this trade?\n{summary}")
+        if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
+            delete_trade_from_gsheet(user, row)
+            st.success(f"✅ Deleted trade: {summary}")
+            st.experimental_rerun()
+
 
 
 import io
