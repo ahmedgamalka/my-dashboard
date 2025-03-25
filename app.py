@@ -318,56 +318,46 @@ import io
 import tempfile
 
 def export_dashboard_summary_to_pdf(summary, user, filtered_df):
-    from fpdf import FPDF
-    import plotly.express as px
-    import io
-
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=14)
+    pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt=f"Dashboard Summary for {user}", ln=True, align='C')
     pdf.ln(10)
 
-    # ✅ جدول منظم للنتائج:
-    pdf.set_font("Arial", size=11)
-    pdf.cell(80, 8, "Metric", border=1, align='C')
-    pdf.cell(80, 8, "Value", border=1, ln=True, align='C')
+    # جدول النتائج
+    pdf.set_font("Arial", size=10)
+    pdf.cell(80, 8, "Metric", border=1)
+    pdf.cell(80, 8, "Value", border=1, ln=True)
     for key, value in summary.items():
         pdf.cell(80, 8, key, border=1)
-        pdf.cell(80, 8, value, border=1, ln=True)
+        pdf.cell(80, 8, str(value), border=1, ln=True)  # ✅ حول القيمة إلى نص
+
     pdf.ln(10)
 
-    # ✅ رسم Equity Curve:
+    # رسم Equity Curve
     filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
-    fig_equity = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Equity Curve")
-    fig_equity.write_image("equity_curve.png")
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(0, 10, "Equity Curve", ln=True, align='C')
-    pdf.image("equity_curve.png", x=10, w=180)
-    pdf.ln(10)
+    fig = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    fig.write_image("equity_curve.png")
+    pdf.image("equity_curve.png", x=10, y=pdf.get_y(), w=180)
+    pdf.ln(85)
 
-    # ✅ رسم Performance by Ticker:
+    # رسم Performance Bar
     perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
-    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Performance by Ticker")
-    fig_bar.write_image("performance_by_ticker.png")
-    pdf.add_page()
-    pdf.cell(0, 10, "Performance by Ticker", ln=True, align='C')
-    pdf.image("performance_by_ticker.png", x=10, w=180)
-    pdf.ln(10)
+    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
+    fig_bar.write_image("bar_chart.png")
+    pdf.image("bar_chart.png", x=10, y=pdf.get_y(), w=180)
+    pdf.ln(85)
 
-    # ✅ رسم Pie Chart (Win vs Loss):
-    wins = len(filtered_df[filtered_df["Net P&L"] > 0])
-    losses = len(filtered_df[filtered_df["Net P&L"] <= 0])
-    pie_data = pd.DataFrame({
-        "Result": ["Wins", "Losses"],
-        "Count": [wins, losses]
-    })
-    fig_pie = px.pie(pie_data, values="Count", names="Result", title="Win vs Loss Distribution")
-    fig_pie.write_image("win_loss_pie.png")
-    pdf.add_page()
-    pdf.cell(0, 10, "Win vs Loss Distribution", ln=True, align='C')
-    pdf.image("win_loss_pie.png", x=10, w=180)
+    # رسم Win/Loss Pie Chart
+    win_count = len(filtered_df[filtered_df["Net P&L"] > 0])
+    loss_count = len(filtered_df[filtered_df["Net P&L"] <= 0])
+    fig_pie = px.pie(
+        names=["Wins", "Losses"],
+        values=[win_count, loss_count],
+        title="Win vs Loss Distribution"
+    )
+    fig_pie.write_image("pie_chart.png")
+    pdf.image("pie_chart.png", x=10, y=pdf.get_y(), w=150)
 
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
