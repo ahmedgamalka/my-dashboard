@@ -403,6 +403,17 @@ def dashboard_page():
     fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
     st.plotly_chart(fig_bar)
 
+        # رسم Pie Chart يوضح نسبة الصفقات الرابحة مقابل الخاسرة
+    st.subheader("🥧 Win vs Loss Distribution")
+    pie_data = pd.DataFrame({
+        "Result": ["Winning Trades", "Losing Trades"],
+        "Count": [len(winning_trades), len(losing_trades)]
+    })
+
+    fig_pie = px.pie(pie_data, names="Result", values="Count", title="Win vs Loss Breakdown")
+    st.plotly_chart(fig_pie)
+
+
     # ملخص للـ PDF
     summary = {
         "Total Trades": total_trades,
@@ -485,6 +496,16 @@ def main():
         login_signup()
     else:
         user = st.session_state["username"]
+          # تنبيه في الـ sidebar لو في صفقات فيها R أقل من 1
+        client = connect_gsheet()
+        try:
+            sheet = client.open("Trading_Journal_Master").worksheet(user)
+            df = pd.DataFrame(sheet.get_all_records())
+            low_r_trades = df[df["R Multiple"] < 1]
+            if not low_r_trades.empty:
+                st.sidebar.warning(f"⚠️ Attention: You have {len(low_r_trades)} trades with R < 1.0")
+        except:
+            pass
         st.sidebar.image("logo.png", width=100)
         st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
