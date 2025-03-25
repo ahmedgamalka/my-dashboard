@@ -187,7 +187,6 @@ def add_trade_page():
 
 from fpdf import FPDF
 
-# دالة تصدير الجورنال إلى PDF
 def export_journal_to_pdf(filtered_df, user):
     pdf = FPDF()
     pdf.add_page()
@@ -203,7 +202,6 @@ def export_journal_to_pdf(filtered_df, user):
     pdf_file = f"trading_journal_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
-
 
 def trade_journal_page():
     st.header("📁 Trade Journal")
@@ -225,15 +223,15 @@ def trade_journal_page():
         st.dataframe(df.reset_index(drop=True), use_container_width=True)
 
         # زرار التصدير كـ PDF
-        if st.button("📥 Export Journal to PDF"):
+        if st.button("📥 Export Journal to PDF", key="export_pdf_button"):
             pdf_file = export_journal_to_pdf(df, user)
             with open(pdf_file, "rb") as f:
-                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
+                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf", key="download_pdf")
 
         st.subheader("🗑️ Delete Trades:")
         for idx, row in df.iterrows():
             summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-            if st.button(f"❌ Delete: {summary}", key=f"delete_{idx}"):
+            if st.button(f"❌ Delete: {summary}", key=f"delete_button_{idx}"):
                 st.warning(f"Are you sure you want to delete this trade?\n{summary}")
                 if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_delete_{idx}"):
                     all_data = sheet.get_all_records()
@@ -243,10 +241,10 @@ def trade_journal_page():
                     ]
                     sheet.clear()
                     sheet.append_row(list(df_new.columns))
-                    for i, record in df_new.iterrows():
+                    for _, record in df_new.iterrows():
                         sheet.append_row(record.tolist())
                     st.success(f"✅ Deleted trade: {summary}")
-                    st.rerun()
+                    st.experimental_rerun()
 
             
         # Export as PDF
