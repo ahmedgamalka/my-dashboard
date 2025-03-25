@@ -272,12 +272,12 @@ def trade_journal_page():
         # زر الحذف
     st.subheader("🗑️ Delete Trades:")
     for idx, row in df.iterrows():
-    summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
-    if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
-        if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
-            delete_trade_from_gsheet(user, row)
-            st.success(f"✅ Deleted trade: {summary}")
-            st.rerun()
+        summary = f"{row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']} | P&L: {row['Net P&L']}"
+        if st.button(f"❌ Delete: {summary}", key=f"del_{idx}"):
+            if st.button(f"✅ Confirm Delete: {summary}", key=f"confirm_{idx}"):
+                delete_trade_from_gsheet(user, row)
+                st.success(f"✅ Deleted trade: {summary}")
+                st.rerun()
 
 
 import io
