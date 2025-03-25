@@ -117,7 +117,6 @@ def risk_management_page():
         risk_dollar = pos_size * risk_per_share
         total_invested_amount = pos_size * entry
 
-
         if risk_dollar == 0:
             st.warning("⚠️ Risk amount calculated as zero.")
             st.info("💡 Tip: Adjust stop loss or entry price.")
@@ -126,56 +125,35 @@ def risk_management_page():
         actual_rr = potential_reward / risk_dollar
         gain_pct = (potential_reward / (pos_size * entry)) * 100
 
-if st.button("Calculate"):
-    risk_per_share = abs(entry - stop)
+        df = pd.DataFrame({
+            "Metric": [
+                "Position Size (shares)", 
+                "Total Trading Fee ($)", 
+                "Risk Amount ($)", 
+                "Calculated Take Profit Price ($)", 
+                "Potential Reward ($)", 
+                "Actual R/R Ratio", 
+                "Expected Gain (%)",
+                "Total Invested Amount ($)"
+            ],
+            "Value": [
+                pos_size, 
+                f"${pos_size * commission * 2:.2f}", 
+                f"${risk_dollar:.2f}", 
+                f"${take_profit:.2f}", 
+                f"${potential_reward:.2f}", 
+                f"{actual_rr:.2f}", 
+                f"{gain_pct:.2f}%", 
+                f"${total_invested_amount:.2f}"
+            ]
+        })
 
-    if risk_per_share < 0.01:
-        st.warning("⚠️ The difference between Entry Price and Stop Loss is too small or zero.")
-        st.info("💡 Tip: Increase the distance between Entry Price and Stop Loss.")
-        return
+        st.dataframe(df.style.apply(highlight_rows, axis=1))
 
-    pos_size = int(max_loss / risk_per_share)
-    take_profit = entry + (risk_per_share * rr_ratio)
-    potential_reward = (take_profit - entry) * pos_size
-    risk_dollar = pos_size * risk_per_share
-    total_invested_amount = pos_size * entry
+        if actual_rr < 1:
+            st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, which is below 1.0.")
+            st.info("💡 Tip: Consider improving your stop loss or target.")
 
-    if risk_dollar == 0:
-        st.warning("⚠️ Risk amount calculated as zero.")
-        st.info("💡 Tip: Adjust stop loss or entry price.")
-        return
-
-    actual_rr = potential_reward / risk_dollar
-    gain_pct = (potential_reward / (pos_size * entry)) * 100
-
-    df = pd.DataFrame({
-        "Metric": [
-            "Position Size (shares)", 
-            "Total Trading Fee ($)", 
-            "Risk Amount ($)", 
-            "Calculated Take Profit Price ($)", 
-            "Potential Reward ($)", 
-            "Actual R/R Ratio", 
-            "Expected Gain (%)",
-            "Total Invested Amount ($)"
-        ],
-        "Value": [
-            pos_size, 
-            f"${pos_size * commission * 2:.2f}", 
-            f"${risk_dollar:.2f}", 
-            f"${take_profit:.2f}", 
-            f"${potential_reward:.2f}", 
-            f"{actual_rr:.2f}", 
-            f"{gain_pct:.2f}%", 
-            f"${total_invested_amount:.2f}"
-        ]
-    })
-
-    st.dataframe(df.style.apply(highlight_rows, axis=1))
-
-    if actual_rr < 1:
-        st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, which is below 1.0.")
-        st.info("💡 Tip: Consider improving your stop loss or target.")
 
 
 # صفحة إضافة صفقة جديدة
