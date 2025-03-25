@@ -250,14 +250,34 @@ def trade_journal_page():
 
         st.dataframe(df.reset_index(drop=True), use_container_width=True)
 
+        # التصدير PDF
+        if st.button("📥 Export Journal to PDF"):
+            pdf_file = export_journal_to_pdf(df, user)
+            with open(pdf_file, "rb") as f:
+                st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
+
+        # حذف الصفقة
         st.subheader("🗑️ Delete Trades:")
         for idx, row in df.iterrows():
-            summary = f"{row['Trade ID']} | {row['Ticker Symbol']} | Entry: {row['Entry Price']} | Exit: {row['Exit Price']}"
-            if st.button(f"❌ Delete Trade ID {row['Trade ID']}", key=f"del_{row['Trade ID']}"):
-                delete_trade_from_gsheet(user, row["Trade ID"])
-                st.success(f"✅ Deleted trade with ID: {row['Trade ID']}")
-                st.experimental_rerun()
+            summary = f"{row['Trade ID']} | {row['Ticker Symbol']} | Entry: {row['Entry Price']}"
+            if st.button(f"❌ Delete {summary}", key=f"delete_{row['Trade ID']}"):
+                st.session_state.trade_id_to_delete = row['Trade ID']
 
+        # تأكيد الحذف خارج اللوب
+        if "trade_id_to_delete" in st.session_state:
+            trade_id = st.session_state.trade_id_to_delete
+            st.warning(f"Are you sure you want to delete trade ID: {trade_id}?")
+            if st.button("✅ Confirm Delete"):
+                all_data = sheet.get_all_records()
+                df_all = pd.DataFrame(all_data)
+                df_new = df_all[df_all["Trade ID"] != trade_id]
+                sheet.clear()
+                sheet.append_row(list(df_new.columns))
+                for i, record in df_new.iterrows():
+                    sheet.append_row(record.tolist())
+                st.success(f"✅ Deleted trade with ID: {trade_id}")
+                del st.session_state.trade_id_to_delete
+                st.experimental_rerun()
 
 import io
 
