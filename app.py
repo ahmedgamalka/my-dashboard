@@ -350,6 +350,20 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df):
     pdf.ln(10)
     pdf.image(bar_img, x=10, w=180)
 
+        # رسم Win vs Loss Distribution
+    win_loss_counts = filtered_df.copy()
+    win_loss_counts['Result'] = win_loss_counts['Net P&L'].apply(lambda x: 'Win' if x > 0 else 'Loss')
+    win_loss_summary = win_loss_counts['Result'].value_counts().reset_index()
+    win_loss_summary.columns = ['Result', 'Count']
+
+    fig_pie = px.pie(win_loss_summary, values='Count', names='Result', title='Win vs Loss Distribution')
+    pie_img = f"win_loss_pie_{user}.png"
+    fig_pie.write_image(pie_img, engine="kaleido")
+
+    pdf.ln(10)
+    pdf.image(pie_img, x=10, w=150)
+
+
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
