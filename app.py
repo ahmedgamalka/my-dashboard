@@ -180,7 +180,7 @@ def add_trade_page():
         size = st.number_input("Position Size", min_value=1, step=1)
         stop = st.number_input("Stop Loss Price", step=0.1)
         target = st.number_input("Target Price", step=0.1)
-        commission = st.number_input("Commission ($)", step=0.01)
+        commission = st.number_input("Total Commission ($)", value=3.98, step=0.01)
         used_indicator = st.text_input("Used Indicator")
         used_strategy = st.text_input("Used Strategy")
         notes = st.text_area("Notes")
