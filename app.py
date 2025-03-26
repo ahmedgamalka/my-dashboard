@@ -87,7 +87,7 @@ def login_signup():
 # تمييز الصفوف المهمة
 def highlight_rows(row):
     highlight = "background-color: yellow; color: black"
-    if row["Metric"] in ["Position Size (shares)", "Calculated Take Profit Price ($)", "Total Invested Amount ($)"]:
+    if row["Metric"] in ["Position Size (shares)", "Take Profit Price ($)", "Amount Invested ($)"]:
         return [highlight, highlight]
     return ["", ""]
 
