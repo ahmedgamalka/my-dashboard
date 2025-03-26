@@ -67,7 +67,14 @@ def verify_password(password, hashed):
 # صفحة تسجيل الدخول وإنشاء حساب
 def login_signup():
     # إضافة اللوجو واسم البرنامج في صفحة اللوجين
-    st.image("logo.png", width=120)
+    st.markdown(
+    f"""
+    <div style='text-align: center;'>
+        <img src='logo.png' width='120'>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
     st.markdown("<h1 style='text-align: center; color: white;'>Trading Risk Management & Journal</h1>", unsafe_allow_html=True)
     st.markdown("---")
     
