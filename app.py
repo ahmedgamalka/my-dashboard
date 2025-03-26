@@ -125,7 +125,7 @@ def risk_management_page():
 
         if total_invested_amount > acc_bal:
             st.warning("⚠️ Position Size (shares) Exceeds Your Account Balance.")
-            pos_size = int(acc_bal / (entry + risk_per_share)   
+            pos_size = int(acc_bal / (entry + risk_per_share))   
             return
 
         actual_rr = potential_reward / risk_dollar
