@@ -95,7 +95,7 @@ def highlight_rows(row):
 def risk_management_page():
     st.header("📊 Risk Management")
     acc_bal = st.number_input("Account Balance ($)", min_value=100.0, value=1000.0, step=100.0)
-    commission = st.number_input("Commission Per Share ($)", value=3.98, step=0.01)
+    commission = st.number_input("Commission Per Share ($)", value=0.02, step=0.01)
     risk_pct = st.number_input("Risk % per Trade", value=2.0, step=0.1) / 100
     entry = st.number_input("Entry Price", value=100.0)
     stop = st.number_input("Stop Loss Price", value=95.0)
