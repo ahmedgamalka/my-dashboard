@@ -11,6 +11,30 @@ from oauth2client.service_account import ServiceAccountCredentials
 import tempfile
 import plotly.io as pio
 
+trading_tips_list = [
+    "Always trade with a stop loss — discipline protects your capital.",
+    "Don’t overtrade — wait for high-probability setups.",
+    "The trend is your friend — don’t fight it.",
+    "Stick to your trading plan, don’t improvise mid-trade.",
+    "Focus on risk management, not just profits.",
+    "Avoid revenge trading after a losing trade.",
+    "Trade only what you can afford to lose.",
+    "Don’t chase trades — let the trade come to you.",
+    "Keep your charts clean and avoid indicator overload.",
+    "Master one strategy before trying to learn others.",
+    "Pre-market preparation is key for day traders.",
+    "Focus on consistency, not on one big win.",
+    "Set daily loss limits and stick to them.",
+    "Avoid trading based on emotions or FOMO.",
+    "Be patient — no trade is better than a bad trade.",
+    "Track your trades in your journal to spot mistakes.",
+    "Never double down on losing positions.",
+    "Remember: capital preservation first, profits second.",
+    "Stick to your preferred timeframes, don’t jump around.",
+    "If uncertain, step aside — cash is also a position."
+]
+
+
 st.set_page_config(
     page_title="Trading Journal",
     page_icon="https://raw.githubusercontent.com/ahmedgamalka/my-dashboard/refs/heads/main/favicon.ico"
@@ -581,6 +605,12 @@ def main():
         st.sidebar.image("logo.png", width=100)
         st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
+
+        # ✅ Trading Tip of the Day
+        tip_index = datetime.now().day % len(trading_tips_list)
+        today_tip = trading_tips_list[tip_index]
+        st.sidebar.subheader("📅 Trading Tip of the Day")
+        st.sidebar.info(f"💡 {today_tip}")
 
         page = st.sidebar.radio("Go to:", [
             "Risk Management", "Add Trade", "Trade Journal", "Dashboard", "Documentation", "Settings"
