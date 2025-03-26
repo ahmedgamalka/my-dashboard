@@ -117,15 +117,14 @@ def risk_management_page():
         potential_reward = ((take_profit - entry) * pos_size) - 3.98
         risk_dollar = pos_size * risk_per_share
         total_invested_amount = pos_size * entry
-
+        
+        if total_invested_amount > acc_bal:
+            st.pos_size = int(acc_bal / (entry + risk_per_share))
+            return
+            
         if risk_dollar == 0:
             st.warning("⚠️ Risk amount calculated as zero.")
             st.info("💡 Tip: Adjust stop loss or entry price.")
-            return
-
-        if total_invested_amount > acc_bal:
-            st.pos_size = int(acc_bal / (entry + risk_per_share))
-            st.warning("⚠️ Position Size (shares) Exceeds Your Account Balance.")
             return
 
         actual_rr = potential_reward / risk_dollar
