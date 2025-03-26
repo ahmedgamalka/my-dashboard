@@ -87,7 +87,7 @@ def login_signup():
 # تمييز الصفوف المهمة
 def highlight_rows(row):
     highlight = "background-color: yellow; color: black"
-    if row["Metric"] in ["Position Size (shares)", "Calculated Take Profit Price ($)"]:
+    if row["Metric"] in ["Position Size (shares)", "Calculated Take Profit Price ($)", "Total Invested Amount ($)"]:
         return [highlight, highlight]
     return ["", ""]
 
@@ -114,7 +114,7 @@ def risk_management_page():
 
         pos_size = int(max_loss / risk_per_share)
         take_profit = entry + (risk_per_share * rr_ratio)
-        potential_reward = (take_profit - entry) * pos_size
+        potential_reward = ((take_profit - entry) * pos_size) - 3.98
         risk_dollar = pos_size * risk_per_share
         total_invested_amount = pos_size * entry
 
@@ -134,7 +134,7 @@ def risk_management_page():
                 "Calculated Take Profit Price ($)", 
                 "Potential Reward ($)", 
                 "Actual R/R Ratio", 
-                "Expected Gain (%)",
+                "Expected Gain (After Commission) (%)",
                 "Total Invested Amount ($)"
             ],
             "Value": [
