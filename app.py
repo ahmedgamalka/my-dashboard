@@ -80,6 +80,13 @@ def login_signup():
                 font-size: 16px;
                 color: white;
             }
+             </style>
+            <div class="sidebar-footer">
+                Designed & Developed by <strong>Ahmed Gamal</strong>
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
     
     
     st.title("🔐 Login or Sign Up")
