@@ -94,9 +94,19 @@ def highlight_rows(row):
 # صفحة إدارة المخاطر
 def risk_management_page():
     st.header("📊 Risk Management")
+
+    # إدخال رصيد الحساب فقط
     acc_bal = st.number_input("Account Balance ($)", min_value=0.0, value=1000.0, step=100.0)
-    commission = st.number_input("Commission Per Share ($)", value=0.02, step=0.01)
-    risk_pct = st.number_input("Risk % per Trade", value=2.0, step=0.1) / 100
+
+    # استخدام الإعدادات من session_state
+    commission = st.session_state.get("commission_per_share", 0.02)
+    min_commission = st.session_state.get("min_commission", 3.98)
+    risk_pct = st.session_state.get("default_risk_pct", 2.0) / 100
+    buffer_pct = st.session_state.get("cash_buffer_pct", 1.0) / 100
+
+    # عرض القيم الحالية للمستخدم
+    st.info(f"Commission Per Share: ${commission} | Minimum Commission: ${min_commission} | Risk % per trade: {risk_pct*100}% | Reserved Cash Buffer: {buffer_pct*100}%")
+
     entry = st.number_input("Entry Price", value=100.0)
     stop = st.number_input("Stop Loss Price", value=90.0)
     rr_ratio = st.number_input("Desired R/R Ratio", value=2.0, step=0.1)
@@ -118,18 +128,19 @@ def risk_management_page():
 
         # ✅ حساب العمولة مع الحد الأدنى
         total_commission = pos_size * commission * 2
-        if total_commission < 3.98 and pos_size > 0:
-            total_commission = 3.98
+        if total_commission < min_commission and pos_size > 0:
+            total_commission = min_commission
 
-        # ✅ تعديل تلقائي لو المبلغ المستثمر أكبر من رأس المال
-        if total_invested_amount + total_commission > acc_bal * 0.99:
-            st.warning("⚠️ The invested amount + commission exceed available balance (leaving 1% buffer). Adjusting position size...")
-            pos_size = int((acc_bal * 0.99 - total_commission) / entry)
+        # ✅ تعديل تلقائي لو المبلغ المستثمر + العمولة أكبر من رأس المال المتاح بعد الحجز
+        available_balance = acc_bal * (1 - buffer_pct)
+        if total_invested_amount + total_commission > available_balance:
+            st.warning("⚠️ The invested amount + commission exceed the available balance (after reserving buffer). Adjusting position size automatically...")
+            pos_size = int((available_balance - min_commission) / entry)  # نحجز الحد الأدنى للعمولة
             total_invested_amount = pos_size * entry
             risk_dollar = pos_size * risk_per_share
             total_commission = pos_size * commission * 2
-            if total_commission < 3.98 and pos_size > 0:
-                total_commission = 3.98
+            if total_commission < min_commission and pos_size > 0:
+                total_commission = min_commission
 
         potential_reward = (take_profit - entry) * pos_size
         actual_rr = (potential_reward - total_commission) / risk_dollar if risk_dollar > 0 else 0
@@ -529,6 +540,26 @@ def documentation_page():
 
     st.success("This guide will always be here to help you master your trading dashboard! 🚀")
 
+# ⬇️ هنا أضف:
+def settings_page():
+    st.header("⚙️ Settings — App Configuration")
+    st.write("هنا تقدر تحدد القيم الافتراضية اللي البرنامج هيشتغل بيها في كل الحسابات ⬇️")
+
+    commission_per_share = st.number_input("Commission Per Share ($)", value=st.session_state.get("commission_per_share", 0.02), step=0.001)
+    st.session_state["commission_per_share"] = commission_per_share
+
+    min_commission = st.number_input("Minimum Total Commission (Buy + Sell) $", value=st.session_state.get("min_commission", 3.98), step=0.01)
+    st.session_state["min_commission"] = min_commission
+
+    default_risk_pct = st.number_input("Default Risk % per Trade", value=st.session_state.get("default_risk_pct", 2.0), step=0.1)
+    st.session_state["default_risk_pct"] = default_risk_pct
+
+    cash_buffer_pct = st.number_input("Cash Buffer % (Reserve from account balance)", value=st.session_state.get("cash_buffer_pct", 1.0), step=0.1)
+    st.session_state["cash_buffer_pct"] = cash_buffer_pct
+
+    if st.button("✅ Save Settings"):
+        st.success("Settings saved successfully! 🎯")
+
 
 # التطبيق الأساسي main
 def main():
@@ -552,8 +583,9 @@ def main():
         st.sidebar.title(f"Welcome, {user}")
 
         page = st.sidebar.radio("Go to:", [
-            "Risk Management", "Add Trade", "Trade Journal", "Dashboard", "Documentation"
+            "Risk Management", "Add Trade", "Trade Journal", "Dashboard", "Documentation", "Settings"
         ])
+
 
         st.sidebar.markdown(
             '''
@@ -590,6 +622,8 @@ def main():
             dashboard_page()
         elif page == "Documentation":
             documentation_page()
+        elif page == "Settings":
+            settings_page()
 
 
 if __name__ == "__main__":
