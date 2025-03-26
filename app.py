@@ -70,23 +70,6 @@ def login_signup():
     st.image("logo.png", width=120)
     st.markdown("<h1 style='text-align: center; color: white;'>Trading Risk Management & Journal</h1>", unsafe_allow_html=True)
     st.markdown("---")
-    st.markdown(
-            '''
-            <style>
-            .sidebar-footer {
-                position: fixed;
-                bottom: 20px;
-                text-align: center;
-                font-size: 16px;
-                color: white;
-            }
-             </style>
-            <div class="sidebar-footer">
-                Designed & Developed by <strong>Ahmed Gamal</strong>
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
     
     
     st.title("🔐 Login or Sign Up")
