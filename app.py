@@ -73,24 +73,20 @@ def login_signup():
             display: flex;
             justify-content: center;
             align-items: center;
+            margin-bottom: 20px;
         }}
         .center-logo img {{
-            max-width: 50%;
+            max-width: 150px;
             height: auto;
-        }}
-        @media (max-width: 600px) {{
-            .center-logo img {{
-                max-width: 70%;
-            }}
         }}
         </style>
         <div class='center-logo'>
-            <img src='logo.png' alt='Logo'>
+            <img src='https://raw.githubusercontent.com/ahmedgamalka/my-dashboard/refs/heads/main/logo.png' alt='Logo'>
         </div>
         """, 
         unsafe_allow_html=True
     )
-    st.markdown("<h2 style='text-align: center; color: white;'>Trading Risk Management & Journal</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: white;'>Trading Risk Management & Journal</h1>", unsafe_allow_html=True)
     st.markdown("---")
 
     st.title("🔐 Login or Sign Up")
