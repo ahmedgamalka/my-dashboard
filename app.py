@@ -628,7 +628,6 @@ def main():
         st.sidebar.image("logo.png", width=100)
         st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
-        st.markdown("---")
 
 
         # ✅ Trading Tip of the Day
@@ -636,7 +635,6 @@ def main():
         today_tip = trading_tips_list[tip_index]
         st.sidebar.subheader("📅 Trading Tip of the Day")
         st.sidebar.info(f"💡 {today_tip}")
-        st.markdown("---")
 
 
         page = st.sidebar.radio("Go to:", [
