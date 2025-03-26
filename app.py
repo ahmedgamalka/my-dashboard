@@ -123,6 +123,10 @@ def risk_management_page():
             st.info("💡 Tip: Adjust stop loss or entry price.")
             return
 
+        if total_invested_amount > acc_bal:
+            st.warning("⚠️ Position Size (shares) Exceeds Your Account Balance.")
+            return
+
         actual_rr = potential_reward / risk_dollar
         gain_pct = (potential_reward / (pos_size * entry)) * 100
 
