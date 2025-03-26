@@ -105,7 +105,7 @@ def risk_management_page():
     buffer_pct = st.session_state.get("cash_buffer_pct", 1.0) / 100
 
     # عرض القيم الحالية للمستخدم
-    st.info(f"Commission Per Share: ${commission} | Minimum Commission: ${min_commission} | Risk % per trade: {risk_pct*100}% | Reserved Cash Buffer: {buffer_pct*100}%")
+    st.info(f"Commission Per Share: ${commission} - | - Minimum Commission: ${min_commission} - | - Risk % per trade: {risk_pct*100}% - | - Reserved Cash Buffer: {buffer_pct*100}%")
 
     entry = st.number_input("Entry Price", value=100.0)
     stop = st.number_input("Stop Loss Price", value=90.0)
@@ -543,7 +543,7 @@ def documentation_page():
 # ⬇️ هنا أضف:
 def settings_page():
     st.header("⚙️ Settings — App Configuration")
-    st.write("هنا تقدر تحدد القيم الافتراضية اللي البرنامج هيشتغل بيها في كل الحسابات ⬇️")
+    st.write("Here you can set the default values the app will use for all calculations ⬇️")
 
     commission_per_share = st.number_input("Commission Per Share ($)", value=st.session_state.get("commission_per_share", 0.02), step=0.001)
     st.session_state["commission_per_share"] = commission_per_share
