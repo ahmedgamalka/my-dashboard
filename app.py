@@ -112,19 +112,22 @@ def risk_management_page():
             st.info("💡 Tip: Increase the distance between Entry Price and Stop Loss.")
             return
 
-        pos_size = int(max_loss - (max_loss * 0.01) / risk_per_share)
-        take_profit = entry + (risk_per_share * rr_ratio)
-        potential_reward = ((take_profit - entry) * pos_size) - 3.98
-        risk_dollar = pos_size * risk_per_share
-        total_invested_amount = pos_size * entry
-     
-        if risk_dollar == 0:
-            st.warning("⚠️ Risk amount calculated as zero.")
-            st.info("💡 Tip: Adjust stop loss or entry price.")
-            return
+        pos_size = int(max_loss / risk_per_share)
+        total_invested_amount = pos_size * entry + (pos_size * commission * 2)
+        reserved_amount = acc_bal * 0.01   # حجز 1%
+        available_amount = acc_bal - reserved_amount
 
-        actual_rr = potential_reward / risk_dollar
-        gain_pct = (potential_reward / (pos_size * entry)) * 100
+        # التحقق وإعادة الحساب لو المبلغ أكبر من المتاح
+        if total_invested_amount > available_amount:
+            st.warning(f"⚠️ The calculated investment (${total_invested_amount:.2f}) exceeds your available balance after reserve (${available_amount:.2f}). Recalculating optimal position size...")
+            pos_size = int((available_amount - (commission * 2)) / entry)
+            total_invested_amount = pos_size * entry + (pos_size * commission * 2)
+
+        take_profit = entry + (risk_per_share * rr_ratio)
+        potential_reward = (take_profit - entry) * pos_size - (pos_size * commission * 2)
+        risk_dollar = pos_size * risk_per_share
+        actual_rr = potential_reward / risk_dollar if risk_dollar > 0 else 0
+        gain_pct = (potential_reward / (pos_size * entry)) * 100 if pos_size > 0 else 0
 
         df = pd.DataFrame({
             "Metric": [
@@ -152,8 +155,7 @@ def risk_management_page():
         st.dataframe(df.style.apply(highlight_rows, axis=1))
 
         if actual_rr < 1:
-            st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, which is below 1.0.")
-            st.info("💡 Tip: Consider improving your stop loss or target.")
+            st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, consider adjusting your setup.")
 
 
 
