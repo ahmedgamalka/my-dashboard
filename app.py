@@ -90,7 +90,7 @@ def login_signup():
         """, 
         unsafe_allow_html=True
     )
-    st.markdown("<h1 style='text-align: center; color: white;'>Trading Risk Management & Journal</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: white;'>Trading Risk Management & Journal</h1>", unsafe_allow_html=True)
     st.markdown("---")
 
     st.title("🔐 Login or Sign Up")
