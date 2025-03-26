@@ -66,19 +66,33 @@ def verify_password(password, hashed):
 
 # صفحة تسجيل الدخول وإنشاء حساب
 def login_signup():
-    # إضافة اللوجو واسم البرنامج في صفحة اللوجين
     st.markdown(
-    f"""
-    <div style='text-align: center;'>
-        <img src='logo.png' width='120'>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+        f"""
+        <style>
+        .center-logo {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }}
+        .center-logo img {{
+            max-width: 50%;
+            height: auto;
+        }}
+        @media (max-width: 600px) {{
+            .center-logo img {{
+                max-width: 70%;
+            }}
+        }}
+        </style>
+        <div class='center-logo'>
+            <img src='logo.png' alt='Logo'>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
     st.markdown("<h1 style='text-align: center; color: white;'>Trading Risk Management & Journal</h1>", unsafe_allow_html=True)
     st.markdown("---")
-    
-    
+
     st.title("🔐 Login or Sign Up")
     menu = st.radio("Select:", ["Login", "Sign Up"])
     client = connect_gsheet()
@@ -618,12 +632,16 @@ def main():
         st.sidebar.image("logo.png", width=100)
         st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
+        st.markdown("---")
+
 
         # ✅ Trading Tip of the Day
         tip_index = datetime.now().day % len(trading_tips_list)
         today_tip = trading_tips_list[tip_index]
         st.sidebar.subheader("📅 Trading Tip of the Day")
         st.sidebar.info(f"💡 {today_tip}")
+        st.markdown("---")
+
 
         page = st.sidebar.radio("Go to:", [
             "Risk Management", "Add Trade", "Trade Journal", "Dashboard", "Documentation", "Settings"
