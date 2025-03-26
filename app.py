@@ -90,7 +90,7 @@ def login_signup():
     st.markdown("---")
 
     st.title("🔐 Login or Sign Up")
-    menu = st.radio(["Select:", "Login", "Sign Up"])
+    menu = st.radio("Select:", ["Login", "Sign Up"])
     client = connect_gsheet()
 
     try:
