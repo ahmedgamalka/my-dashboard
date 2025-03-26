@@ -112,7 +112,7 @@ def risk_management_page():
             st.info("💡 Tip: Increase the distance between Entry Price and Stop Loss.")
             return
 
-        pos_size = int(max_loss / risk_per_share)
+        pos_size = int((max_loss -(max_loss * 0.01) / risk_per_share)
         take_profit = entry + (risk_per_share * rr_ratio)
         potential_reward = ((take_profit - entry) * pos_size) - 3.98
         risk_dollar = pos_size * risk_per_share
@@ -129,7 +129,7 @@ def risk_management_page():
         df = pd.DataFrame({
             "Metric": [
                 "Position Size (shares)", 
-                "Total Trading Fee ($)", 
+                "Total Commission ($)", 
                 "Risk Amount ($)", 
                 "Calculated Take Profit Price ($)", 
                 "Potential Reward (After Commission) ($)", 
