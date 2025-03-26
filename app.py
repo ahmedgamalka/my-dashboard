@@ -94,42 +94,47 @@ def highlight_rows(row):
 # صفحة إدارة المخاطر
 def risk_management_page():
     st.header("📊 Risk Management")
-    acc_bal = st.number_input("Account Balance ($)", min_value=100.0, value=1000.0, step=100.0)
+    acc_bal = st.number_input("Account Balance ($)", min_value=0.0, value=1000.0, step=100.0)
     commission = st.number_input("Commission Per Share ($)", value=0.02, step=0.01)
     risk_pct = st.number_input("Risk % per Trade", value=2.0, step=0.1) / 100
     entry = st.number_input("Entry Price", value=100.0)
-    stop = st.number_input("Stop Loss Price", value=95.0)
-    rr_ratio = st.number_input("Desired R/R Ratio", value=2.0, step=1.0)
+    stop = st.number_input("Stop Loss Price", value=90.0)
+    rr_ratio = st.number_input("Desired R/R Ratio", value=2.0, step=0.1)
 
     max_loss = acc_bal * risk_pct
     st.write(f"Max Dollar Loss: ${max_loss:.2f}")
 
     if st.button("Calculate"):
         risk_per_share = abs(entry - stop)
-    
+
         if risk_per_share < 0.01:
-            st.warning("⚠️ Entry price and Stop loss are too close.")
+            st.warning("⚠️ The difference between Entry Price and Stop Loss is too small or zero.")
             return
-    
-        reserved_amount = acc_bal * 0.01   # حجز 1% من رأس المال
-        available_amount = acc_bal - reserved_amount
-    
-        # المعادلة المصححة لحساب حجم الصفقة بعد خصم العمولة:
-        pos_size = int(available_amount / (entry + (commission * 2)))
-    
-        total_invested_amount = pos_size * entry + (pos_size * commission * 2)
-    
-        if total_invested_amount > available_amount:
-            st.warning(f"⚠️ Investment (${total_invested_amount:.2f}) exceeds allowed after reserve (${available_amount:.2f}). Adjusted automatically.")
-            pos_size -= 1
-            total_invested_amount = pos_size * entry + (pos_size * commission * 2)
-    
+
+        pos_size = int(max_loss / risk_per_share)
         take_profit = entry + (risk_per_share * rr_ratio)
-        potential_reward = (take_profit - entry) * pos_size - (pos_size * commission * 2)
         risk_dollar = pos_size * risk_per_share
-        actual_rr = potential_reward / risk_dollar if risk_dollar > 0 else 0
-        gain_pct = (potential_reward / (pos_size * entry)) * 100 if pos_size > 0 else 0
-    
+        total_invested_amount = pos_size * entry
+
+        # ✅ حساب العمولة مع الحد الأدنى
+        total_commission = pos_size * commission * 2
+        if total_commission < 3.98 and pos_size > 0:
+            total_commission = 3.98
+
+        # ✅ تعديل تلقائي لو المبلغ المستثمر أكبر من رأس المال
+        if total_invested_amount + total_commission > acc_bal * 0.99:
+            st.warning("⚠️ The invested amount + commission exceed available balance (leaving 1% buffer). Adjusting position size...")
+            pos_size = int((acc_bal * 0.99 - total_commission) / entry)
+            total_invested_amount = pos_size * entry
+            risk_dollar = pos_size * risk_per_share
+            total_commission = pos_size * commission * 2
+            if total_commission < 3.98 and pos_size > 0:
+                total_commission = 3.98
+
+        potential_reward = (take_profit - entry) * pos_size
+        actual_rr = (potential_reward - total_commission) / risk_dollar if risk_dollar > 0 else 0
+        gain_pct = ((potential_reward - total_commission) / (pos_size * entry)) * 100 if pos_size > 0 else 0
+
         df = pd.DataFrame({
             "Metric": [
                 "Position Size (shares)", 
@@ -143,20 +148,20 @@ def risk_management_page():
             ],
             "Value": [
                 pos_size, 
-                f"${pos_size * commission * 2:.2f}", 
+                f"${total_commission:.2f}", 
                 f"${risk_dollar:.2f}", 
                 f"${take_profit:.2f}", 
-                f"${potential_reward:.2f}", 
+                f"${potential_reward - total_commission:.2f}", 
                 f"{actual_rr:.2f}", 
                 f"{gain_pct:.2f}%", 
                 f"${total_invested_amount:.2f}"
             ]
         })
-    
+
         st.dataframe(df.style.apply(highlight_rows, axis=1))
-    
+
         if actual_rr < 1:
-            st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, consider adjusting your stop or target.")
+            st.warning(f"⚠️ The actual R/R ratio is {actual_rr:.2f}, which is below 1.0.")
 
 
 # صفحة إضافة صفقة جديدة
