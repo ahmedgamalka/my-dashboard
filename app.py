@@ -66,6 +66,28 @@ def verify_password(password, hashed):
 
 # صفحة تسجيل الدخول وإنشاء حساب
 def login_signup():
+    # إضافة اللوجو واسم البرنامج في صفحة اللوجين
+    st.image("logo.png", width=120)
+    st.markdown("<h1 style='text-align: center; color: white;'>Trading Risk Management & Journal</h1>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown(
+            '''
+            <style>
+            .sidebar-footer {
+                position: fixed;
+                bottom: 20px;
+                text-align: left;
+                font-size: 16px;
+                color: white;
+            }
+            </style>
+            <div class="sidebar-footer">
+                Designed & Developed by <strong>Ahmed Gamal</strong>
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
+    
     st.title("🔐 Login or Sign Up")
     menu = st.radio("Select:", ["Login", "Sign Up"])
     client = connect_gsheet()
