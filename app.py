@@ -132,9 +132,9 @@ def risk_management_page():
                 "Total Trading Fee ($)", 
                 "Risk Amount ($)", 
                 "Calculated Take Profit Price ($)", 
-                "Potential Reward ($)", 
+                "Potential Reward (After Commission) ($)", 
                 "Actual R/R Ratio", 
-                "Expected Gain (After Commission) (%)",
+                "Expected Gain (%)",
                 "Total Invested Amount ($)"
             ],
             "Value": [
