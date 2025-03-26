@@ -76,17 +76,11 @@ def login_signup():
             .sidebar-footer {
                 position: fixed;
                 bottom: 20px;
-                text-align: left;
+                text-align: center;
                 font-size: 16px;
                 color: white;
             }
-            </style>
-            <div class="sidebar-footer">
-                Designed & Developed by <strong>Ahmed Gamal</strong>
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
+    
     
     st.title("🔐 Login or Sign Up")
     menu = st.radio("Select:", ["Login", "Sign Up"])
