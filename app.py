@@ -625,7 +625,7 @@ def main():
                 st.sidebar.warning(f"⚠️ Attention: You have {len(low_r_trades)} trades with R < 1.0")
         except:
             pass
-        st.sidebar.image("logo.png", width=100)
+        st.sidebar.image("logo.png", width=50)
         st.sidebar.title("Trading Risk Management & Journaling")
         st.sidebar.title(f"Welcome, {user}")
 
