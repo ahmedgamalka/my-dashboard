@@ -586,7 +586,7 @@ def documentation_page():
     - Export a full dashboard summary (with charts) as a PDF.
     """)
 
-    st.subheader("⚙️ Dashboard Page")
+    st.subheader("⚙️ Settings Page")
     st.write("""
     - Preconfigure all default values on the Risk Management page to streamline the process and save time.
     """)
