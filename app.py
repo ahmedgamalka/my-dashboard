@@ -379,54 +379,54 @@ def trade_journal_page():
                 del st.session_state.trade_id_to_delete
                 st.rerun()   # ✅ استخدم st.rerun() هنا خارج اللوب!
 
-import io
+import matplotlib.pyplot as plt
+import plotly.io as pio
 import tempfile
+from fpdf import FPDF
+import pandas as pd
 
-def export_dashboard_summary_to_pdf(summary, user, filtered_df):
+# دالة تصدير ملخص الداشبورد بصيغة PDF مع كل الرسوم البيانية
+def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_bar, fig_pie, fig_calendar):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_fill_color(240, 240, 240)
+
     pdf.cell(200, 10, txt=f"Dashboard Summary for {user}", ln=True, align='C')
-    pdf.ln(10)
+    pdf.ln(5)
 
-    # جدول النتائج
-    pdf.set_font("Arial", size=10)
-    pdf.cell(80, 8, "Metric", border=1)
-    pdf.cell(80, 8, "Value", border=1, ln=True)
+    # جدول ملخص النتائج
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(60, 8, "Metric", border=1, align='C', fill=True)
+    pdf.cell(60, 8, "Value", border=1, align='C', fill=True)
+    pdf.ln()
+
+    pdf.set_font("Arial", '', 10)
     for key, value in summary.items():
-        pdf.cell(80, 8, key, border=1)
-        pdf.cell(80, 8, str(value), border=1, ln=True)  # ✅ حول القيمة إلى نص
+        pdf.cell(60, 8, key, border=1)
+        pdf.cell(60, 8, str(value), border=1)
+        pdf.ln()
 
-    pdf.ln(10)
+    # حفظ كل رسم مؤقتاً وإضافته إلى PDF
+    def save_and_insert(fig, title):
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+            pio.write_image(fig, tmpfile.name, format='png', width=1000, height=500)
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 10, txt=title, ln=True)
+            pdf.image(tmpfile.name, x=10, y=25, w=190)
 
-    # رسم Equity Curve
-    filtered_df['Cumulative PnL'] = filtered_df["Net P&L"].cumsum()
-    fig = px.line(filtered_df, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
-    fig.write_image("equity_curve.png")
-    pdf.image("equity_curve.png", x=10, y=pdf.get_y(), w=180)
-    pdf.ln(85)
+    save_and_insert(fig_equity, "Equity Curve")
+    save_and_insert(fig_bar, "Performance by Ticker Symbol")
+    save_and_insert(fig_pie, "Win vs Loss Breakdown")
+    save_and_insert(fig_calendar, "Profit/Loss Calendar View")
 
-    # رسم Performance Bar
-    perf = filtered_df.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
-    fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
-    fig_bar.write_image("bar_chart.png")
-    pdf.image("bar_chart.png", x=10, y=pdf.get_y(), w=180)
-    pdf.ln(85)
+    # حفظ الملف النهائي
+    final_file = f"dashboard_summary_{user}.pdf"
+    pdf.output(final_file)
 
-    # رسم Win/Loss Pie Chart
-    win_count = len(filtered_df[filtered_df["Net P&L"] > 0])
-    loss_count = len(filtered_df[filtered_df["Net P&L"] <= 0])
-    fig_pie = px.pie(
-        names=["Wins", "Losses"],
-        values=[win_count, loss_count],
-        title="Win vs Loss Distribution"
-    )
-    fig_pie.write_image("pie_chart.png")
-    pdf.image("pie_chart.png", x=10, y=pdf.get_y(), w=150)
-
-    pdf_file = f"dashboard_summary_{user}.pdf"
-    pdf.output(pdf_file)
-    return pdf_file
+    return final_file
 
 
 # صفحة الداشبورد
@@ -478,7 +478,8 @@ def dashboard_page():
     max_gain = filtered["Net P&L"].max()
     max_loss = filtered["Net P&L"].min()
 
-    # عرض المقاييس
+    # 🧾 المقاييس
+    st.subheader("📊 Performance Summary")
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Trades", total_trades)
@@ -490,30 +491,38 @@ def dashboard_page():
         st.metric("Max Gain", f"${max_gain:.2f}")
         st.metric("Max Loss", f"${max_loss:.2f}")
 
-    # رسم منحنى الربح التراكمي
+    # 📈 Equity Curve
     st.subheader("📈 Equity Curve")
     filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
-    fig = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
-    st.plotly_chart(fig)
+    fig_equity = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    st.plotly_chart(fig_equity)
 
-    # أداء الأسهم حسب Ticker
+    # 🏷️ By Ticker Symbol
     st.subheader("🏷️ Performance by Ticker Symbol")
     perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
     fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
     st.plotly_chart(fig_bar)
 
-        # رسم Pie Chart يوضح نسبة الصفقات الرابحة مقابل الخاسرة
+    # 🥧 Win vs Loss Pie
     st.subheader("🥧 Win vs Loss Distribution")
     pie_data = pd.DataFrame({
         "Result": ["Winning Trades", "Losing Trades"],
         "Count": [len(winning_trades), len(losing_trades)]
     })
-
     fig_pie = px.pie(pie_data, names="Result", values="Count", title="Win vs Loss Breakdown")
     st.plotly_chart(fig_pie)
 
+    # 🗓️ Calendar P&L View
+    st.subheader("🗓️ Calendar View: Profit/Loss by Day")
+    calendar_df = filtered.copy()
+    calendar_df["Date"] = calendar_df["Entry Time"].dt.date
+    calendar_summary = calendar_df.groupby("Date")["Net P&L"].sum().reset_index()
+    calendar_summary["Color"] = calendar_summary["Net P&L"].apply(lambda x: "Profit" if x > 0 else "Loss")
+    fig_calendar = px.scatter(calendar_summary, x="Date", y="Net P&L", color="Color", size=abs(calendar_summary["Net P&L"]),
+                              title="Daily Profit/Loss", color_discrete_map={"Profit": "green", "Loss": "red"})
+    st.plotly_chart(fig_calendar)
 
-    # ملخص للـ PDF
+    # ملخص
     summary = {
         "Total Trades": total_trades,
         "Win Rate %": f"{win_rate:.2f}%",
@@ -525,11 +534,12 @@ def dashboard_page():
         "Max Loss": f"${max_loss:.2f}"
     }
 
-    # زر تصدير الداشبورد كـ PDF
+    # زر تصدير PDF
     if st.button("📥 Export Dashboard Summary to PDF"):
-        pdf_file = export_dashboard_summary_to_pdf(summary, user, filtered)
+        pdf_file = export_dashboard_summary_to_pdf(summary, user, filtered, fig_equity, fig_bar, fig_pie, fig_calendar)
         with open(pdf_file, "rb") as f:
             st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
+
 
 def settings_page():
     st.header("⚙️ Settings — App Configuration")
