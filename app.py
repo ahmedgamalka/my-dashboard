@@ -642,7 +642,7 @@ def main():
 
 
         page = st.sidebar.radio("Go to:", [
-            "Risk Management", "Add Trade", "Trade Journal", "Dashboard", "Documentation", "Settings"
+            "Risk Management", "Add Trade", "Trade Journal", "Dashboard", "Settings", "Documentation"
         ])
 
 
@@ -679,11 +679,11 @@ def main():
             trade_journal_page()
         elif page == "Dashboard":
             dashboard_page()
-        elif page == "Documentation":
-            documentation_page()
         elif page == "Settings":
             settings_page()
-
+        elif page == "Documentation":
+            documentation_page()
+        
 
 if __name__ == "__main__":
     main()
