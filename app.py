@@ -531,6 +531,24 @@ def dashboard_page():
         with open(pdf_file, "rb") as f:
             st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
+def settings_page():
+    st.header("⚙️ Settings — App Configuration")
+    st.write("Here you can set the default values the app will use for all calculations ⬇️")
+
+    commission_per_share = st.number_input("Commission Per Share ($)", value=st.session_state.get("commission_per_share", 0.02), step=0.001)
+    st.session_state["commission_per_share"] = commission_per_share
+
+    min_commission = st.number_input("Minimum Total Commission (Buy + Sell) $", value=st.session_state.get("min_commission", 3.98), step=0.01)
+    st.session_state["min_commission"] = min_commission
+
+    default_risk_pct = st.number_input("Default Risk % per Trade", value=st.session_state.get("default_risk_pct", 2.0), step=0.1)
+    st.session_state["default_risk_pct"] = default_risk_pct
+
+    cash_buffer_pct = st.number_input("Cash Buffer % (Reserve from account balance)", value=st.session_state.get("cash_buffer_pct", 1.0), step=0.1)
+    st.session_state["cash_buffer_pct"] = cash_buffer_pct
+
+    if st.button("✅ Save Settings"):
+        st.success("Settings saved successfully! 🎯")
 
 # صفحة التوثيق
 def documentation_page():
@@ -568,6 +586,11 @@ def documentation_page():
     - Export a full dashboard summary (with charts) as a PDF.
     """)
 
+    st.subheader("⚙️ Dashboard Page")
+    st.write("""
+    - Preconfigure all default values on the Risk Management page to streamline the process and save time.
+    """)
+
     st.subheader("💡 Key Definitions")
     st.markdown("""
     - **Position Size**: Number of shares you can trade without exceeding your max risk.
@@ -587,25 +610,6 @@ def documentation_page():
 
     st.success("This guide will always be here to help you master your trading dashboard! 🚀")
 
-# ⬇️ هنا أضف:
-def settings_page():
-    st.header("⚙️ Settings — App Configuration")
-    st.write("Here you can set the default values the app will use for all calculations ⬇️")
-
-    commission_per_share = st.number_input("Commission Per Share ($)", value=st.session_state.get("commission_per_share", 0.02), step=0.001)
-    st.session_state["commission_per_share"] = commission_per_share
-
-    min_commission = st.number_input("Minimum Total Commission (Buy + Sell) $", value=st.session_state.get("min_commission", 3.98), step=0.01)
-    st.session_state["min_commission"] = min_commission
-
-    default_risk_pct = st.number_input("Default Risk % per Trade", value=st.session_state.get("default_risk_pct", 2.0), step=0.1)
-    st.session_state["default_risk_pct"] = default_risk_pct
-
-    cash_buffer_pct = st.number_input("Cash Buffer % (Reserve from account balance)", value=st.session_state.get("cash_buffer_pct", 1.0), step=0.1)
-    st.session_state["cash_buffer_pct"] = cash_buffer_pct
-
-    if st.button("✅ Save Settings"):
-        st.success("Settings saved successfully! 🎯")
 
 
 # التطبيق الأساسي main
