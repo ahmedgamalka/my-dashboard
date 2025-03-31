@@ -397,17 +397,20 @@ def save_plot_to_tempfile(fig):
 # دالة تصدير ملخص الداشبورد بصيغة PDF مع كل الرسوم البيانية
 def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_bar, fig_pie):
     pdf = FPDF()
+    pdf.set_doc_option("core_fonts_encoding", "latin1")  # ✅ تأكد من استخدام ترميز آمن
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Dashboard Report — {user}", ln=True, align='C')
+    pdf.cell(200, 10, txt="Dashboard Report - " + user.encode('latin-1', 'replace').decode('latin-1'), ln=True, align='C')
     pdf.ln(10)
 
     # جدول النتائج
     pdf.set_font("Arial", size=11)
     pdf.set_fill_color(240, 240, 240)
     for key, value in summary.items():
-        pdf.cell(60, 8, str(key), border=1, fill=True)
-        pdf.cell(80, 8, str(value), border=1, ln=True)
+        key_safe = str(key).encode('latin-1', 'replace').decode('latin-1')
+        val_safe = str(value).encode('latin-1', 'replace').decode('latin-1')
+        pdf.cell(60, 8, key_safe, border=1, fill=True)
+        pdf.cell(80, 8, val_safe, border=1, ln=True)
     pdf.ln(5)
 
     def save_plot_to_tempfile(fig):
@@ -423,10 +426,11 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_
             return None
 
     def add_plot(fig, title):
+        title_safe = title.encode('latin-1', 'replace').decode('latin-1')
         img_buf = save_plot_to_tempfile(fig)
         if img_buf:
             pdf.set_font("Arial", 'B', 11)
-            pdf.cell(200, 10, title, ln=True)
+            pdf.cell(200, 10, title_safe, ln=True)
             pdf.ln(2)
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
                 tmpfile.write(img_buf.read())
@@ -439,9 +443,8 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_
     add_plot(fig_pie, "Win vs Loss Breakdown")
 
     pdf_file = f"dashboard_summary_{user}.pdf"
-    pdf.output(pdf_file)
+    pdf.output(pdf_file, "F")
     return pdf_file
-
 
 # صفحة الداشبورد
 import matplotlib.pyplot as plt
