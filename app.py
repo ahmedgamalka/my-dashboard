@@ -397,7 +397,6 @@ def save_plot_to_tempfile(fig):
 # دالة تصدير ملخص الداشبورد بصيغة PDF مع كل الرسوم البيانية
 def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_bar, fig_pie):
     pdf = FPDF()
-    pdf.set_doc_option("core_fonts_encoding", "latin1")  # ✅ تأكد من استخدام ترميز آمن
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt="Dashboard Report - " + user.encode('latin-1', 'replace').decode('latin-1'), ln=True, align='C')
