@@ -387,49 +387,57 @@ from fpdf import FPDF
 import pandas as pd
 
 # دالة تصدير ملخص الداشبورد بصيغة PDF مع كل الرسوم البيانية
-def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_bar, fig_pie, fig_cal):
+def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_bar, fig_pie, fig_calendar):
+    import io
     from fpdf import FPDF
     import matplotlib.pyplot as plt
-    import io
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(200, 10, txt=f"Dashboard Summary Report — {user}", ln=True, align='C')
-    pdf.set_font("Arial", size=11)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=f"Dashboard Summary for {user}", ln=True, align='C')
+    pdf.ln(10)
+
+    # 🧾 جدول الإحصائيات
+    pdf.set_font("Arial", size=10)
+    pdf.set_fill_color(240, 240, 240)
+    pdf.cell(60, 8, "Metric", border=1, fill=True)
+    pdf.cell(80, 8, "Value", border=1, ln=True, fill=True)
+    for key, value in summary.items():
+        pdf.cell(60, 8, str(key), border=1)
+        pdf.cell(80, 8, str(value), border=1, ln=True)
     pdf.ln(5)
 
-    # Summary Table
-    for key, value in summary.items():
-        pdf.cell(60, 8, txt=key, border=1)
-        pdf.cell(60, 8, txt=value, border=1, ln=True)
+    # 🖼️ حفظ الرسوم إلى صور مؤقتة
+    def save_plot_to_tempfile(fig):
+        buf = io.BytesIO()
+        fig.write_image(buf, format="png")
+        buf.seek(0)
+        return buf
 
-    pdf.ln(8)
-
-    # Function to add plot to PDF
-    def add_plot_to_pdf(fig, title):
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(200, 10, txt=title, ln=True)
+    # 🖼️ حفظ الرسم البياني للكالندر (matplotlib)
+    def save_matplotlib_to_tempfile(fig):
         buf = io.BytesIO()
         fig.savefig(buf, format="png", bbox_inches="tight")
+        plt.close(fig)
         buf.seek(0)
-        img_path = f"{title.replace(' ', '_').lower()}.png"
-        with open(img_path, "wb") as f:
-            f.write(buf.read())
-        pdf.image(img_path, x=10, y=pdf.get_y(), w=180)
+        return buf
+
+    # ⬇️ حفظ الرسومات
+    equity_buf = save_plot_to_tempfile(fig_equity)
+    bar_buf = save_plot_to_tempfile(fig_bar)
+    pie_buf = save_plot_to_tempfile(fig_pie)
+    calendar_buf = save_matplotlib_to_tempfile(fig_calendar)
+
+    # ⬇️ إدراج الصور
+    for img_buf in [equity_buf, bar_buf, pie_buf, calendar_buf]:
+        pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
         pdf.ln(10)
 
-    # Add all plots
-    add_plot_to_pdf(fig_equity, "Equity Curve")
-    add_plot_to_pdf(fig_bar, "Net P&L by Ticker")
-    add_plot_to_pdf(fig_pie, "Win vs Loss Pie Chart")
-    add_plot_to_pdf(fig_cal, "Daily P&L Calendar")
-
-    # Export
-    file_name = f"dashboard_summary_{user}.pdf"
-    pdf.output(file_name)
-    return file_name
-
+    # 📤 حفظ الملف
+    pdf_file = f"dashboard_summary_{user}.pdf"
+    pdf.output(pdf_file)
+    return pdf_file
 
 
 # صفحة الداشبورد
@@ -456,17 +464,16 @@ def dashboard_page():
 
         df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
         df["Net P&L"] = pd.to_numeric(df["Net P&L"], errors="coerce")
-        df["R Multiple"] = pd.to_numeric(df["R Multiple"], errors="coerce")
         df = df.dropna(subset=["Entry Time"])
 
-    # Filter by date
+    # فلترة بالتاريخ
     st.subheader("📅 Filter by Date Range")
     start_date = st.date_input("Start Date", value=datetime(2023, 1, 1))
     end_date = st.date_input("End Date", value=datetime.now())
     end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
 
     filtered = df[
-        (df["Entry Time"] >= pd.to_datetime(start_date)) &
+        (df["Entry Time"] >= pd.to_datetime(start_date)) & 
         (df["Entry Time"] <= end_date_dt)
     ]
 
@@ -474,7 +481,7 @@ def dashboard_page():
         st.warning("⚠️ No trades found for the selected period.")
         return
 
-    # Metrics
+    # 📊 الإحصائيات
     total_trades = len(filtered)
     winning_trades = filtered[filtered["Net P&L"] > 0]
     losing_trades = filtered[filtered["Net P&L"] <= 0]
@@ -486,8 +493,7 @@ def dashboard_page():
     max_gain = filtered["Net P&L"].max()
     max_loss = filtered["Net P&L"].min()
 
-    # Metrics layout
-    st.subheader("📊 Key Stats")
+    # 🎯 عرض المقاييس
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Trades", total_trades)
@@ -499,19 +505,19 @@ def dashboard_page():
         st.metric("Max Gain", f"${max_gain:.2f}")
         st.metric("Max Loss", f"${max_loss:.2f}")
 
-    # Equity Curve
+    # 📈 Equity Curve
     st.subheader("📈 Equity Curve")
     filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
     fig = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
     st.plotly_chart(fig)
 
-    # By Ticker
+    # 📊 Ticker Performance
     st.subheader("🏷️ Performance by Ticker Symbol")
     perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
     fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
     st.plotly_chart(fig_bar)
 
-    # Pie Chart
+    # 🥧 Pie Chart
     st.subheader("🥧 Win vs Loss Distribution")
     pie_data = pd.DataFrame({
         "Result": ["Winning Trades", "Losing Trades"],
@@ -520,25 +526,14 @@ def dashboard_page():
     fig_pie = px.pie(pie_data, names="Result", values="Count", title="Win vs Loss Breakdown")
     st.plotly_chart(fig_pie)
 
-    # Calendar View
-    st.subheader("🗓️ Calendar View (Profit/Loss)")
-    daily = filtered.groupby(filtered['Entry Time'].dt.date)["Net P&L"].sum()
-    daily.index = pd.to_datetime(daily.index)
+    # 📅 Calendar Visualization
+    st.subheader("🗓️ Calendar View: Daily Net P&L")
+    selected_year = end_date.year
+    selected_month = end_date.month
+    fig_calendar = generate_calendar_figure(filtered, selected_year, selected_month)
+    st.pyplot(fig_calendar)
 
-    fig_cal = plt.figure(figsize=(12, 4))
-    calmap.calendarplot(
-        daily, 
-        cmap='RdYlGn', 
-        fillcolor='lightgray', 
-        linewidth=0.5, 
-        daylabels='MTWTFSS', 
-        dayticks=[0, 1, 2, 3, 4, 5, 6], 
-        yearlabel_kws={'color': 'white', 'fontsize': 12}
-    )
-    plt.title("Daily Net P&L Calendar", fontsize=14)
-    st.pyplot(fig_cal)
-
-    # Summary
+    # 📑 Summary Dictionary
     summary = {
         "Total Trades": total_trades,
         "Win Rate %": f"{win_rate:.2f}%",
@@ -550,9 +545,9 @@ def dashboard_page():
         "Max Loss": f"${max_loss:.2f}"
     }
 
-    # Export Button
+    # PDF Export Button
     if st.button("📥 Export Dashboard Summary to PDF"):
-        pdf_file = export_dashboard_summary_to_pdf(summary, user, filtered, fig, fig_bar, fig_pie, fig_cal)
+        pdf_file = export_dashboard_summary_to_pdf(summary, user, filtered, fig, fig_bar, fig_pie, fig_calendar)
         with open(pdf_file, "rb") as f:
             st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
