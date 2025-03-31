@@ -504,7 +504,7 @@ def dashboard_page():
     filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
     fig_equity = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
     st.plotly_chart(fig_equity)
-
+    
     # 📊 Ticker Performance
     st.subheader("🏷️ Performance by Ticker Symbol")
     perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
