@@ -395,7 +395,7 @@ def save_plot_to_tempfile(fig):
         return None
 
 # دالة تصدير ملخص الداشبورد بصيغة PDF مع كل الرسوم البيانية
-def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_bar, fig_pie, fig_calendar):
+def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_bar, fig_pie):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -427,7 +427,6 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_
     add_plot(fig_equity, "📈 Equity Curve")
     add_plot(fig_bar, "🏷️ Net P&L by Ticker")
     add_plot(fig_pie, "🥧 Win vs Loss Breakdown")
-    add_plot(fig_calendar, "🗓️ Calendar Performance")
 
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
@@ -523,8 +522,7 @@ def dashboard_page():
     st.subheader("🗓️ Calendar View: Daily Net P&L")
     selected_year = end_date.year
     selected_month = end_date.month
-    fig_calendar = generate_calendar_figure(filtered, selected_year, selected_month)
-    st.pyplot(fig_calendar)
+
 
     # 📑 Summary Dictionary
     summary = {
@@ -542,7 +540,7 @@ def dashboard_page():
     if st.button("📥 Export Dashboard Summary to PDF"):
         pdf_file = export_dashboard_summary_to_pdf(
             summary, user, filtered,
-            fig_equity, fig_bar, fig_pie, fig_calendar
+            fig_equity, fig_bar, fig_pie  # ✅ بدون fig_calendar
         )
         with open(pdf_file, "rb") as f:
             st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
