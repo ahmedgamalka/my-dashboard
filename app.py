@@ -399,7 +399,7 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"📊 Dashboard Report — {user}", ln=True, align='C')
+    pdf.cell(200, 10, txt=f"Dashboard Report — {user}", ln=True, align='C')
     pdf.ln(10)
 
     # جدول النتائج
@@ -410,7 +410,18 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_
         pdf.cell(80, 8, str(value), border=1, ln=True)
     pdf.ln(5)
 
-    # وظيفة لإضافة الرسم البياني
+    def save_plot_to_tempfile(fig):
+        try:
+            buf = io.BytesIO()
+            img_bytes = pio.to_image(fig, format="png", width=1000, height=500)
+            buf.write(img_bytes)
+            buf.seek(0)
+            return buf
+        except Exception as e:
+            st.error("Failed to export image. Ensure 'kaleido' is installed.")
+            st.exception(e)
+            return None
+
     def add_plot(fig, title):
         img_buf = save_plot_to_tempfile(fig)
         if img_buf:
@@ -423,10 +434,9 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_
                 pdf.image(tmpfile.name, x=10, w=180)
                 pdf.ln(10)
 
-    # إضافة الرسوم البيانية
-    add_plot(fig_equity, "📈 Equity Curve")
-    add_plot(fig_bar, "🏷️ Net P&L by Ticker")
-    add_plot(fig_pie, "🥧 Win vs Loss Breakdown")
+    add_plot(fig_equity, "Equity Curve")
+    add_plot(fig_bar, "Net P&L by Ticker")
+    add_plot(fig_pie, "Win vs Loss Breakdown")
 
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
