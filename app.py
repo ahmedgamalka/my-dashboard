@@ -10,6 +10,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import tempfile
 import plotly.io as pio
+import io
 
 trading_tips_list = [
     "Always trade with a stop loss — discipline protects your capital.",
@@ -501,8 +502,8 @@ def dashboard_page():
     # 📈 Equity Curve
     st.subheader("📈 Equity Curve")
     filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
-    fig = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
-    st.plotly_chart(fig)
+    fig_equity = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
+    st.plotly_chart(fig_equity)
 
     # 📊 Ticker Performance
     st.subheader("🏷️ Performance by Ticker Symbol")
@@ -540,12 +541,12 @@ def dashboard_page():
 
     # PDF Export Button
     if st.button("📥 Export Dashboard Summary to PDF"):
-    pdf_file = export_dashboard_summary_to_pdf(
-        summary, user, filtered,
-        fig_equity, fig_bar, fig_pie, fig_calendar
-    )
-    with open(pdf_file, "rb") as f:
-        st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
+        pdf_file = export_dashboard_summary_to_pdf(
+            summary, user, filtered,
+            fig_equity, fig_bar, fig_pie, fig_calendar
+        )
+        with open(pdf_file, "rb") as f:
+            st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
 
 
