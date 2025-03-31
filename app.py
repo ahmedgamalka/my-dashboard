@@ -379,62 +379,55 @@ def trade_journal_page():
                 del st.session_state.trade_id_to_delete
                 st.rerun()   # ✅ استخدم st.rerun() هنا خارج اللوب!
 
-import io
-import matplotlib.pyplot as plt
 import plotly.io as pio
-import tempfile
-from fpdf import FPDF
-import pandas as pd
+
+def save_plot_to_tempfile(fig):
+    try:
+        buf = io.BytesIO()
+        img_bytes = pio.to_image(fig, format="png", width=1000, height=500)
+        buf.write(img_bytes)
+        buf.seek(0)
+        return buf
+    except Exception as e:
+        st.error("❌ Failed to export image. Ensure 'kaleido' is installed.")
+        st.exception(e)
+        return None
 
 # دالة تصدير ملخص الداشبورد بصيغة PDF مع كل الرسوم البيانية
 def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_bar, fig_pie, fig_calendar):
-    import io
-    from fpdf import FPDF
-    import matplotlib.pyplot as plt
-
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Dashboard Summary for {user}", ln=True, align='C')
+    pdf.cell(200, 10, txt=f"📊 Dashboard Report — {user}", ln=True, align='C')
     pdf.ln(10)
 
-    # 🧾 جدول الإحصائيات
-    pdf.set_font("Arial", size=10)
+    # جدول النتائج
+    pdf.set_font("Arial", size=11)
     pdf.set_fill_color(240, 240, 240)
-    pdf.cell(60, 8, "Metric", border=1, fill=True)
-    pdf.cell(80, 8, "Value", border=1, ln=True, fill=True)
     for key, value in summary.items():
-        pdf.cell(60, 8, str(key), border=1)
+        pdf.cell(60, 8, str(key), border=1, fill=True)
         pdf.cell(80, 8, str(value), border=1, ln=True)
     pdf.ln(5)
 
-    # 🖼️ حفظ الرسوم إلى صور مؤقتة
-    def save_plot_to_tempfile(fig):
-        buf = io.BytesIO()
-        fig.write_image(buf, format="png")
-        buf.seek(0)
-        return buf
+    # وظيفة لإضافة الرسم البياني
+    def add_plot(fig, title):
+        img_buf = save_plot_to_tempfile(fig)
+        if img_buf:
+            pdf.set_font("Arial", 'B', 11)
+            pdf.cell(200, 10, title, ln=True)
+            pdf.ln(2)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+                tmpfile.write(img_buf.read())
+                tmpfile.flush()
+                pdf.image(tmpfile.name, x=10, w=180)
+                pdf.ln(10)
 
-    # 🖼️ حفظ الرسم البياني للكالندر (matplotlib)
-    def save_matplotlib_to_tempfile(fig):
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        plt.close(fig)
-        buf.seek(0)
-        return buf
+    # إضافة الرسوم البيانية
+    add_plot(fig_equity, "📈 Equity Curve")
+    add_plot(fig_bar, "🏷️ Net P&L by Ticker")
+    add_plot(fig_pie, "🥧 Win vs Loss Breakdown")
+    add_plot(fig_calendar, "🗓️ Calendar Performance")
 
-    # ⬇️ حفظ الرسومات
-    equity_buf = save_plot_to_tempfile(fig_equity)
-    bar_buf = save_plot_to_tempfile(fig_bar)
-    pie_buf = save_plot_to_tempfile(fig_pie)
-    calendar_buf = save_matplotlib_to_tempfile(fig_calendar)
-
-    # ⬇️ إدراج الصور
-    for img_buf in [equity_buf, bar_buf, pie_buf, calendar_buf]:
-        pdf.image(img_buf, x=10, y=pdf.get_y(), w=180)
-        pdf.ln(10)
-
-    # 📤 حفظ الملف
     pdf_file = f"dashboard_summary_{user}.pdf"
     pdf.output(pdf_file)
     return pdf_file
@@ -547,10 +540,12 @@ def dashboard_page():
 
     # PDF Export Button
     if st.button("📥 Export Dashboard Summary to PDF"):
-        pdf_file = export_dashboard_summary_to_pdf(summary, user, filtered, fig, fig_bar, fig_pie, fig_calendar)
-        with open(pdf_file, "rb") as f:
-            st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
-
+    pdf_file = export_dashboard_summary_to_pdf(
+        summary, user, filtered,
+        fig_equity, fig_bar, fig_pie, fig_calendar
+    )
+    with open(pdf_file, "rb") as f:
+        st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
 
 
 
