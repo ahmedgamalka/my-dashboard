@@ -6,4 +6,3 @@ fpdf
 gspread
 oauth2client
 kaleido
-calmap
