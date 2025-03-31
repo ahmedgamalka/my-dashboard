@@ -435,7 +435,6 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_
 
 
 # صفحة الداشبورد
-import calmap
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
