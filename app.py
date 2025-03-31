@@ -518,11 +518,6 @@ def dashboard_page():
     fig_pie = px.pie(pie_data, names="Result", values="Count", title="Win vs Loss Breakdown")
     st.plotly_chart(fig_pie)
 
-    # 📅 Calendar Visualization
-    st.subheader("🗓️ Calendar View: Daily Net P&L")
-    selected_year = end_date.year
-    selected_month = end_date.month
-
 
     # 📑 Summary Dictionary
     summary = {
