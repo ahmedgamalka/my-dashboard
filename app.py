@@ -445,6 +445,42 @@ def export_dashboard_summary_to_pdf(summary, user, filtered_df, fig_equity, fig_
     pdf.output(pdf_file, "F")
     return pdf_file
 
+def generate_strategy_performance(df):
+    if "Used Strategy" not in df.columns:
+        return None, None
+
+    df["Used Strategy"] = df["Used Strategy"].fillna("Unknown")
+    strategy_stats = df.groupby("Used Strategy").agg(
+        Trades=("Trade ID", "count"),
+        Total_PnL=("Net P&L", "sum"),
+        Avg_R=("R Multiple", "mean"),
+        WinRate=lambda x: (x > 0).mean() * 100
+    ).reset_index()
+
+    fig = px.bar(strategy_stats, x="Used Strategy", y="Total_PnL", color="Avg_R", 
+                 hover_data=["Trades", "Avg_R", "WinRate"],
+                 title="Performance by Strategy")
+    return strategy_stats, fig
+
+
+def generate_monthly_performance(df):
+    if "Entry Time" not in df.columns or "Net P&L" not in df.columns:
+        return None, None
+
+    df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
+    df["Month"] = df["Entry Time"].dt.to_period("M").astype(str)
+    monthly_stats = df.groupby("Month").agg(
+        Total_Trades=("Trade ID", "count"),
+        Total_PnL=("Net P&L", "sum"),
+        Avg_R=("R Multiple", "mean"),
+        WinRate=lambda x: (x > 0).mean() * 100
+    ).reset_index()
+
+    fig = px.bar(monthly_stats, x="Month", y="Total_PnL", color="Avg_R", 
+                 title="Monthly Net P&L", hover_data=["Total_Trades", "Avg_R", "WinRate"])
+    return monthly_stats, fig
+
+
 # صفحة الداشبورد
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -470,8 +506,7 @@ def dashboard_page():
         df["Net P&L"] = pd.to_numeric(df["Net P&L"], errors="coerce")
         df = df.dropna(subset=["Entry Time"])
 
-    # فلترة بالتاريخ
-    st.subheader("📅 Filter by Date Range")
+    st.markdown("### 📅 Filter by Date Range")
     start_date = st.date_input("Start Date", value=datetime(2023, 1, 1))
     end_date = st.date_input("End Date", value=datetime.now())
     end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
@@ -485,7 +520,6 @@ def dashboard_page():
         st.warning("⚠️ No trades found for the selected period.")
         return
 
-    # 📊 الإحصائيات
     total_trades = len(filtered)
     winning_trades = filtered[filtered["Net P&L"] > 0]
     losing_trades = filtered[filtered["Net P&L"] <= 0]
@@ -497,7 +531,6 @@ def dashboard_page():
     max_gain = filtered["Net P&L"].max()
     max_loss = filtered["Net P&L"].min()
 
-    # 🎯 عرض المقاييس
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Trades", total_trades)
@@ -509,19 +542,16 @@ def dashboard_page():
         st.metric("Max Gain", f"${max_gain:.2f}")
         st.metric("Max Loss", f"${max_loss:.2f}")
 
-    # 📈 Equity Curve
     st.subheader("📈 Equity Curve")
     filtered['Cumulative PnL'] = filtered["Net P&L"].cumsum()
     fig_equity = px.line(filtered, x="Entry Time", y="Cumulative PnL", title="Cumulative Net P&L Over Time")
     st.plotly_chart(fig_equity)
-    
-    # 📊 Ticker Performance
+
     st.subheader("🏷️ Performance by Ticker Symbol")
     perf = filtered.groupby("Ticker Symbol")["Net P&L"].sum().reset_index().sort_values(by="Net P&L", ascending=False)
     fig_bar = px.bar(perf, x="Ticker Symbol", y="Net P&L", title="Net P&L per Ticker")
     st.plotly_chart(fig_bar)
 
-    # 🥧 Pie Chart
     st.subheader("🥧 Win vs Loss Distribution")
     pie_data = pd.DataFrame({
         "Result": ["Winning Trades", "Losing Trades"],
@@ -530,8 +560,20 @@ def dashboard_page():
     fig_pie = px.pie(pie_data, names="Result", values="Count", title="Win vs Loss Breakdown")
     st.plotly_chart(fig_pie)
 
+    # ✅ Performance by Strategy
+    strategy_stats, fig_strategy = generate_strategy_performance(filtered)
+    if strategy_stats is not None:
+        st.subheader("📚 Performance by Strategy")
+        st.plotly_chart(fig_strategy)
+        st.dataframe(strategy_stats)
 
-    # 📑 Summary Dictionary
+    # ✅ Monthly Performance
+    monthly_stats, fig_monthly = generate_monthly_performance(filtered)
+    if monthly_stats is not None:
+        st.subheader("📆 Monthly Performance")
+        st.plotly_chart(fig_monthly)
+        st.dataframe(monthly_stats)
+
     summary = {
         "Total Trades": total_trades,
         "Win Rate %": f"{win_rate:.2f}%",
@@ -543,14 +585,14 @@ def dashboard_page():
         "Max Loss": f"${max_loss:.2f}"
     }
 
-    # PDF Export Button
     if st.button("📥 Export Dashboard Summary to PDF"):
         pdf_file = export_dashboard_summary_to_pdf(
             summary, user, filtered,
-            fig_equity, fig_bar, fig_pie  # ✅ بدون fig_calendar
+            fig_equity, fig_bar, fig_pie
         )
         with open(pdf_file, "rb") as f:
             st.download_button(label="Download PDF", data=f, file_name=pdf_file, mime="application/pdf")
+
 
 
 
