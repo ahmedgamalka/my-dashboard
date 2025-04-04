@@ -469,15 +469,29 @@ def generate_monthly_performance(df):
 
     df["Entry Time"] = pd.to_datetime(df["Entry Time"], errors="coerce")
     df["Month"] = df["Entry Time"].dt.to_period("M").astype(str)
-    monthly_stats = df.groupby("Month").agg(
-        Total_Trades=("Trade ID", "count"),
-        Total_PnL=("Net P&L", "sum"),
-        Avg_R=("R Multiple", "mean"),
-        WinRate=lambda x: (x > 0).mean() * 100
-    ).reset_index()
 
-    fig = px.bar(monthly_stats, x="Month", y="Total_PnL", color="Avg_R", 
-                 title="Monthly Net P&L", hover_data=["Total_Trades", "Avg_R", "WinRate"])
+    grouped = df.groupby("Month")
+    monthly_stats = grouped[["Net P&L", "R Multiple"]].agg({
+        "Net P&L": "sum",
+        "R Multiple": "mean"
+    }).rename(columns={
+        "Net P&L": "Total_PnL",
+        "R Multiple": "Avg_R"
+    })
+
+    monthly_stats["Total_Trades"] = grouped.size()
+    monthly_stats["WinRate"] = grouped["Net P&L"].apply(lambda x: (x > 0).mean() * 100)
+    monthly_stats = monthly_stats.reset_index()
+
+    fig = px.bar(
+        monthly_stats,
+        x="Month",
+        y="Total_PnL",
+        color="Avg_R",
+        title="Monthly Net P&L",
+        hover_data=["Total_Trades", "Avg_R", "WinRate"]
+    )
+
     return monthly_stats, fig
 
 
