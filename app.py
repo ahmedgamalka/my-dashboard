@@ -450,16 +450,30 @@ def generate_strategy_performance(df):
         return None, None
 
     df["Used Strategy"] = df["Used Strategy"].fillna("Unknown")
-    strategy_stats = df.groupby("Used Strategy").agg(
-        Trades=("Trade ID", "count"),
-        Total_PnL=("Net P&L", "sum"),
-        Avg_R=("R Multiple", "mean"),
-        WinRate=lambda x: (x > 0).mean() * 100
-    ).reset_index()
 
-    fig = px.bar(strategy_stats, x="Used Strategy", y="Total_PnL", color="Avg_R", 
-                 hover_data=["Trades", "Avg_R", "WinRate"],
-                 title="Performance by Strategy")
+    grouped = df.groupby("Used Strategy")
+    
+    strategy_stats = grouped[["Net P&L", "R Multiple"]].agg({
+        "Net P&L": "sum",
+        "R Multiple": "mean"
+    }).rename(columns={
+        "Net P&L": "Total_PnL",
+        "R Multiple": "Avg_R"
+    })
+
+    strategy_stats["Trades"] = grouped.size()
+    strategy_stats["WinRate"] = grouped["Net P&L"].apply(lambda x: (x > 0).mean() * 100)
+    strategy_stats = strategy_stats.reset_index()
+
+    fig = px.bar(
+        strategy_stats,
+        x="Used Strategy",
+        y="Total_PnL",
+        color="Avg_R",
+        hover_data=["Trades", "Avg_R", "WinRate"],
+        title="Performance by Strategy"
+    )
+
     return strategy_stats, fig
 
 
